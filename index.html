@@ -664,7 +664,7 @@ function onTimeChange(){
   if(endMin<=startMin){preview.classList.remove('visible');checkSubmit();return;}
   if(startMin<hStartMin||endMin>hEndMin){notice.classList.add('visible');preview.classList.remove('visible');checkSubmit();return;}
 
-  const dayRes=reservations.filter(r=>r.date===date);
+  const dayRes=reservations.filter(r=>normalizeDate(r.date)===date);
   const bc=document.getElementById('timeline-blocked-container');
   bc.innerHTML='';
   const TOTAL=hEndMin-hStartMin;
@@ -698,7 +698,7 @@ function checkSubmit(){
   if(!song||!date||startMin===null||endMin===null||endMin<=startMin||startMin<hStartMin||endMin>hEndMin){
     document.getElementById('submit-btn').disabled=true;return;
   }
-  const conflict=reservations.filter(r=>r.date===date).some(r=>{
+  const conflict=reservations.filter(r=>normalizeDate(r.date)===date).some(r=>{
     const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
     return startMin<re&&endMin>rs;
   });
@@ -739,7 +739,7 @@ async function submitReservation(){
   const startMin=getTimeVal('start');
   const endMin=getTimeVal('end');
   const slotLabel=`${fmtTime(startMin)}-${fmtTime(endMin)}`;
-  const conflict=reservations.filter(r=>r.date===date).some(r=>{
+  const conflict=reservations.filter(r=>normalizeDate(r.date)===date).some(r=>{
     const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
     return startMin<re&&endMin>rs;
   });
@@ -759,12 +759,17 @@ async function submitReservation(){
   renderList();
 }
 
+function normalizeDate(d){ return String(d).split('T')[0]; }
+
 // List
 function renderList(){
   const df=document.getElementById('list-date-filter').value;
   let filtered=[...reservations];
-  if(df) filtered=filtered.filter(r=>r.date===df);
-  filtered.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.slotLabel.localeCompare(b.slotLabel));
+  if(df) filtered=filtered.filter(r=>normalizeDate(r.date)===df);
+  filtered.sort((a,b)=>{
+    const da=normalizeDate(a.date), db=normalizeDate(b.date);
+    return da!==db?da.localeCompare(db):a.slotLabel.localeCompare(b.slotLabel);
+  });
   document.getElementById('total-count').textContent=filtered.length;
   const c=document.getElementById('list-container');
   if(!filtered.length){
@@ -776,7 +781,7 @@ function renderList(){
       <div class="entry-icon">🎵</div>
       <div class="entry-info">
         <div class="entry-song">${r.song}</div>
-        <div class="entry-meta">${r.date} · ${r.slotLabel}</div>
+        <div class="entry-meta">${normalizeDate(r.date)} · ${r.slotLabel}</div>
         <div class="entry-formatted">[&lt;${r.song}&gt;, ${r.slotLabel}]</div>
       </div>
     </div>`).join('');
@@ -791,7 +796,7 @@ function renderCancelList(){
   document.getElementById('cancel-submit-btn').disabled=true;
   document.querySelectorAll('.reason-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById('reason-custom-wrap').style.display='none';
-  const dayRes=reservations.filter(r=>r.date===date).sort((a,b)=>a.slotLabel.localeCompare(b.slotLabel));
+  const dayRes=reservations.filter(r=>normalizeDate(r.date)===date).sort((a,b)=>a.slotLabel.localeCompare(b.slotLabel));
   const c=document.getElementById('cancel-list-container');
   if(!date){c.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📅</div><p>날짜를 선택하면 신청 목록이 표시돼요</p></div>`;return;}
   if(!dayRes.length){c.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📭</div><p>해당 날짜에 신청 내역이 없어요</p></div>`;return;}
@@ -800,7 +805,7 @@ function renderCancelList(){
       <div class="cancel-radio"><div class="cancel-radio-dot"></div></div>
       <div class="cancel-entry-info">
         <div class="cancel-entry-song">🎵 ${r.song}</div>
-        <div class="cancel-entry-meta">${r.date} · ${r.slotLabel}</div>
+        <div class="cancel-entry-meta">${normalizeDate(r.date)} · ${r.slotLabel}</div>
       </div>
     </div>`).join('');
 }
