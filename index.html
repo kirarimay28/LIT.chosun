@@ -137,22 +137,36 @@
   .form-input:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
   .form-input::placeholder { color:var(--muted); }
 
-  /* Time range */
-  .time-range-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .time-select-label { font-size:10px; color:var(--muted); margin-bottom:6px; display:block; font-family:'Space Mono',monospace; letter-spacing:1px; }
+  /* Time picker */
+  .time-range-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .time-picker-group { display:flex; flex-direction:column; gap:6px; }
+  .time-select-label { font-size:10px; color:var(--muted); display:block; font-family:'Space Mono',monospace; letter-spacing:1px; }
+  .time-picker-inputs { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .time-select {
     width:100%; background:var(--surface2);
     border:1px solid var(--border2); border-radius:12px;
-    padding:14px 36px 14px 18px; color:var(--text);
+    padding:13px 32px 13px 14px; color:var(--text);
     font-size:14px; font-family:'Space Mono',monospace;
     outline:none; cursor:pointer;
     transition:border-color 0.2s, box-shadow 0.2s;
     appearance:none; -webkit-appearance:none;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 14px center;
+    background-repeat:no-repeat; background-position:right 10px center;
   }
   .time-select:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
   .time-select option { background:#181818; }
+  /* minute custom input */
+  .min-custom-input {
+    display:none; width:100%; background:var(--surface2);
+    border:1px solid var(--border2); border-radius:12px;
+    padding:13px 14px; color:var(--text);
+    font-size:14px; font-family:'Space Mono',monospace;
+    outline:none; transition:border-color 0.2s;
+    margin-top:6px;
+  }
+  .min-custom-input.visible { display:block; }
+  .min-custom-input:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
+  .min-custom-input::placeholder { color:var(--muted); }
 
   .hours-notice {
     display:none; background:rgba(255,107,107,0.07);
@@ -387,17 +401,43 @@
 
       <div class="section-label">사용 시간 선택</div>
       <div class="time-range-row">
-        <div>
+        <div class="time-picker-group">
           <span class="time-select-label">시작 시간</span>
-          <select class="time-select" id="start-time" onchange="onTimeChange()">
-            <option value="">-- 선택 --</option>
-          </select>
+          <div class="time-picker-inputs">
+            <select class="time-select" id="start-hour" onchange="onTimeChange()">
+              <option value="">시</option>
+            </select>
+            <select class="time-select" id="start-min" onchange="onStartMinChange()">
+              <option value="">분</option>
+              <option value="0">00</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="40">40</option>
+              <option value="50">50</option>
+              <option value="custom">기타</option>
+            </select>
+          </div>
+          <input type="number" class="min-custom-input" id="start-min-custom" min="0" max="59" placeholder="분 직접입력 (0-59)" oninput="onTimeChange()" />
         </div>
-        <div>
+        <div class="time-picker-group">
           <span class="time-select-label">종료 시간</span>
-          <select class="time-select" id="end-time" onchange="onTimeChange()">
-            <option value="">-- 선택 --</option>
-          </select>
+          <div class="time-picker-inputs">
+            <select class="time-select" id="end-hour" onchange="onTimeChange()">
+              <option value="">시</option>
+            </select>
+            <select class="time-select" id="end-min" onchange="onEndMinChange()">
+              <option value="">분</option>
+              <option value="0">00</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="40">40</option>
+              <option value="50">50</option>
+              <option value="custom">기타</option>
+            </select>
+          </div>
+          <input type="number" class="min-custom-input" id="end-min-custom" min="0" max="59" placeholder="분 직접입력 (0-59)" oninput="onTimeChange()" />
         </div>
       </div>
 
@@ -503,7 +543,8 @@
 })();
 
 // State
-let reservations = JSON.parse(localStorage.getItem('club_reservations')||'[]');
+const API_URL = 'https://script.google.com/macros/s/AKfycbx-pOpiOoSsgQFJOiq2ptu13cElg68ypNf9NdrstmPxivYiMEUr63FQstjAKeBcu0JeSA/exec';
+let reservations = [];
 
 // Hours
 function getHours(dateStr){
@@ -512,67 +553,136 @@ function getHours(dateStr){
   return (day===0||day===6) ? {start:9,end:17} : {start:6,end:22};
 }
 
+// API
+async function apiGet(){
+  try {
+    const res = await fetch(API_URL + '?action=getAll');
+    const data = await res.json();
+    reservations = data.map(r => ({...r, id: Number(r.id)}));
+  } catch(e) {
+    showToast('⚠️ 데이터 불러오기 실패', 'error');
+  }
+}
+async function apiAdd(entry){
+  await fetch(API_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'add', ...entry})
+  });
+}
+async function apiDelete(id){
+  await fetch(API_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'delete', id})
+  });
+}
+
+// Loading indicator
+function setLoading(show){
+  document.getElementById('submit-btn').disabled = show;
+  document.getElementById('submit-btn').textContent = show ? '처리 중...' : '신청하기';
+}
+
 // Init
-function init(){
+async function init(){
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('apply-date').value = today;
   document.getElementById('list-date-filter').value = '';
   buildTimeSelects(today);
+  showToast('📡 데이터 불러오는 중...', 'success');
+  await apiGet();
   checkSubmit();
   renderList();
 }
 
 function buildTimeSelects(dateStr){
   const h = getHours(dateStr);
-  const ss = document.getElementById('start-time');
-  const es = document.getElementById('end-time');
-  ss.innerHTML = '<option value="">-- 선택 --</option>';
-  es.innerHTML = '<option value="">-- 선택 --</option>';
-  for(let i=h.start;i<h.end;i++) ss.innerHTML+=`<option value="${i}">${String(i).padStart(2,'0')}:00</option>`;
-  for(let i=h.start+1;i<=h.end;i++) es.innerHTML+=`<option value="${i}">${String(i).padStart(2,'0')}:00</option>`;
-  const mid = Math.floor((h.start+h.end)/2);
+  const sh = document.getElementById('start-hour');
+  const eh = document.getElementById('end-hour');
+  sh.innerHTML = '<option value="">시</option>';
+  eh.innerHTML = '<option value="">시</option>';
+  for(let i=h.start;i<=h.end;i++){
+    const label=`${String(i).padStart(2,'0')}시`;
+    sh.innerHTML+=`<option value="${i}">${label}</option>`;
+    eh.innerHTML+=`<option value="${i}">${label}</option>`;
+  }
+  const mid=Math.floor((h.start+h.end)/2);
   document.getElementById('timeline-labels').innerHTML=
     `<span>${String(h.start).padStart(2,'0')}:00</span><span>${String(mid).padStart(2,'0')}:00</span><span>${String(h.end).padStart(2,'0')}:00</span>`;
 }
 
-function onDateChange(){
-  const d = document.getElementById('apply-date').value;
-  document.getElementById('start-time').value='';
-  document.getElementById('end-time').value='';
-  document.getElementById('timeline-preview').classList.remove('visible');
-  document.getElementById('hours-notice').classList.remove('visible');
-  buildTimeSelects(d);
-  checkSubmit();
+function onStartMinChange(){
+  const v=document.getElementById('start-min').value;
+  const ci=document.getElementById('start-min-custom');
+  if(v==='custom'){ci.classList.add('visible');ci.value='';} else {ci.classList.remove('visible');}
+  onTimeChange();
+}
+function onEndMinChange(){
+  const v=document.getElementById('end-min').value;
+  const ci=document.getElementById('end-min-custom');
+  if(v==='custom'){ci.classList.add('visible');ci.value='';} else {ci.classList.remove('visible');}
+  onTimeChange();
+}
+
+// returns minutes as number, or null if not ready
+function getMinVal(prefix){
+  const sel=document.getElementById(`${prefix}-min`).value;
+  if(sel==='') return null;
+  if(sel==='custom'){
+    const v=parseInt(document.getElementById(`${prefix}-min-custom`).value);
+    return (!isNaN(v)&&v>=0&&v<=59)?v:null;
+  }
+  return parseInt(sel);
+}
+// returns total minutes from midnight, or null
+function getTimeVal(prefix){
+  const h=parseInt(document.getElementById(`${prefix}-hour`).value);
+  if(isNaN(h)||document.getElementById(`${prefix}-hour`).value==='') return null;
+  const m=getMinVal(prefix);
+  if(m===null) return null;
+  return h*60+m;
+}
+function fmtTime(totalMin){
+  const h=Math.floor(totalMin/60), m=totalMin%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function fmtDuration(diffMin){
+  if(diffMin<60) return `${diffMin}분`;
+  const h=Math.floor(diffMin/60), m=diffMin%60;
+  return m>0?`${h}시간 ${m}분`:`${h}시간`;
 }
 
 function onTimeChange(){
-  const start = parseInt(document.getElementById('start-time').value);
-  const end   = parseInt(document.getElementById('end-time').value);
-  const date  = document.getElementById('apply-date').value;
-  const h     = getHours(date);
-  const preview = document.getElementById('timeline-preview');
-  const notice  = document.getElementById('hours-notice');
+  const startMin=getTimeVal('start');
+  const endMin=getTimeVal('end');
+  const date=document.getElementById('apply-date').value;
+  const h=getHours(date);
+  const hStartMin=h.start*60, hEndMin=h.end*60;
+  const preview=document.getElementById('timeline-preview');
+  const notice=document.getElementById('hours-notice');
   notice.classList.remove('visible');
-  if(!start||!end){preview.classList.remove('visible');checkSubmit();return;}
-  if(end<=start){preview.classList.remove('visible');checkSubmit();return;}
-  if(start<h.start||end>h.end){notice.classList.add('visible');preview.classList.remove('visible');checkSubmit();return;}
+  if(startMin===null||endMin===null){preview.classList.remove('visible');checkSubmit();return;}
+  if(endMin<=startMin){preview.classList.remove('visible');checkSubmit();return;}
+  if(startMin<hStartMin||endMin>hEndMin){notice.classList.add('visible');preview.classList.remove('visible');checkSubmit();return;}
 
-  const dayRes = reservations.filter(r=>r.date===date);
-  const bc = document.getElementById('timeline-blocked-container');
+  const dayRes=reservations.filter(r=>r.date===date);
+  const bc=document.getElementById('timeline-blocked-container');
   bc.innerHTML='';
-  const TOTAL = h.end-h.start;
+  const TOTAL=hEndMin-hStartMin;
   dayRes.forEach(r=>{
-    const [rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));
-    const d=document.createElement('div');
-    d.className='timeline-bar-blocked';
-    d.style.cssText=`left:${((rs-h.start)/TOTAL*100).toFixed(2)}%;width:${((re-rs)/TOTAL*100).toFixed(2)}%`;
-    bc.appendChild(d);
+    const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
+    const d2=document.createElement('div');
+    d2.className='timeline-bar-blocked';
+    d2.style.cssText=`left:${((rs-hStartMin)/TOTAL*100).toFixed(2)}%;width:${((re-rs)/TOTAL*100).toFixed(2)}%`;
+    bc.appendChild(d2);
   });
   document.getElementById('timeline-fill').style.cssText=
-    `left:${((start-h.start)/TOTAL*100).toFixed(2)}%;width:${((end-start)/TOTAL*100).toFixed(2)}%`;
+    `left:${((startMin-hStartMin)/TOTAL*100).toFixed(2)}%;width:${((endMin-startMin)/TOTAL*100).toFixed(2)}%`;
   document.getElementById('timeline-summary').textContent=
-    `${String(start).padStart(2,'0')}:00 — ${String(end).padStart(2,'0')}:00  (${end-start}시간)`;
-  const conflict=dayRes.some(r=>{const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;});
+    `${fmtTime(startMin)} — ${fmtTime(endMin)}  (${fmtDuration(endMin-startMin)})`;
+  const conflict=dayRes.some(r=>{
+    const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
+    return startMin<re&&endMin>rs;
+  });
   document.getElementById('timeline-conflict').classList.toggle('visible',conflict);
   preview.classList.add('visible');
   checkSubmit();
@@ -581,14 +691,16 @@ function onTimeChange(){
 function checkSubmit(){
   const song=document.getElementById('song-name').value.trim();
   const date=document.getElementById('apply-date').value;
-  const start=parseInt(document.getElementById('start-time').value);
-  const end=parseInt(document.getElementById('end-time').value);
+  const startMin=getTimeVal('start');
+  const endMin=getTimeVal('end');
   const h=getHours(date);
-  if(!song||!date||!start||!end||end<=start||start<h.start||end>h.end){
+  const hStartMin=h.start*60, hEndMin=h.end*60;
+  if(!song||!date||startMin===null||endMin===null||endMin<=startMin||startMin<hStartMin||endMin>hEndMin){
     document.getElementById('submit-btn').disabled=true;return;
   }
   const conflict=reservations.filter(r=>r.date===date).some(r=>{
-    const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;
+    const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
+    return startMin<re&&endMin>rs;
   });
   document.getElementById('submit-btn').disabled=conflict;
 }
@@ -600,10 +712,10 @@ function switchTab(tab){
     document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===tab);
     document.getElementById(`panel-${t}`).classList.toggle('active',t===tab);
   });
-  if(tab==='list') renderList();
+  if(tab==='list') apiGet().then(()=>renderList());
   if(tab==='cancel'){
     document.getElementById('cancel-date').value=new Date().toISOString().split('T')[0];
-    renderCancelList();
+    apiGet().then(()=>renderCancelList());
   }
 }
 
@@ -611,35 +723,40 @@ function switchTab(tab){
 function openConfirmModal(){
   const song=document.getElementById('song-name').value.trim();
   const date=document.getElementById('apply-date').value;
-  const start=parseInt(document.getElementById('start-time').value);
-  const end=parseInt(document.getElementById('end-time').value);
+  const startMin=getTimeVal('start');
+  const endMin=getTimeVal('end');
   document.getElementById('modal-summary').innerHTML=
-    `🎵  ${song}\n📅  ${date}\n⏰  ${String(start).padStart(2,'0')}:00 — ${String(end).padStart(2,'0')}:00  (${end-start}시간)`;
+    `🎵  ${song}\n📅  ${date}\n⏰  ${fmtTime(startMin)} — ${fmtTime(endMin)}  (${fmtDuration(endMin-startMin)})`;
   document.getElementById('confirm-modal').classList.add('open');
 }
 function closeModal(){document.getElementById('confirm-modal').classList.remove('open');}
 document.getElementById('confirm-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 // Submit
-function submitReservation(){
+async function submitReservation(){
   const song=document.getElementById('song-name').value.trim();
   const date=document.getElementById('apply-date').value;
-  const start=parseInt(document.getElementById('start-time').value);
-  const end=parseInt(document.getElementById('end-time').value);
-  const slotLabel=`${String(start).padStart(2,'0')}:00-${String(end).padStart(2,'0')}:00`;
+  const startMin=getTimeVal('start');
+  const endMin=getTimeVal('end');
+  const slotLabel=`${fmtTime(startMin)}-${fmtTime(endMin)}`;
   const conflict=reservations.filter(r=>r.date===date).some(r=>{
-    const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;
+    const[rs,re]=r.slotLabel.split('-').map(t=>{const[hh,mm]=t.split(':');return parseInt(hh)*60+parseInt(mm);});
+    return startMin<re&&endMin>rs;
   });
   if(conflict){showToast('⚠️ 이미 신청된 시간입니다','error');closeModal();return;}
-  reservations.push({id:Date.now(),song,date,slotLabel,createdAt:new Date().toISOString()});
-  localStorage.setItem('club_reservations',JSON.stringify(reservations));
+  const entry={id:Date.now(),song,date,slotLabel,createdAt:new Date().toISOString()};
   closeModal();
+  setLoading(true);
+  await apiAdd(entry);
+  await apiGet();
+  setLoading(false);
   showToast(`✓  [<${song}>, ${slotLabel}]  신청 완료`,'success');
   document.getElementById('song-name').value='';
-  document.getElementById('start-time').value='';
-  document.getElementById('end-time').value='';
+  ['start-hour','start-min','end-hour','end-min'].forEach(id=>document.getElementById(id).value='');
+  ['start-min-custom','end-min-custom'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('visible');});
   document.getElementById('timeline-preview').classList.remove('visible');
   checkSubmit();
+  renderList();
 }
 
 // List
@@ -723,14 +840,17 @@ function executeCancel(){
   const entry=reservations.find(r=>r.id===selectedCancelId);
   if(!entry) return;
   const fr=selectedReason==='기타'?document.getElementById('reason-custom').value.trim():selectedReason;
-  reservations=reservations.filter(r=>r.id!==selectedCancelId);
-  localStorage.setItem('club_reservations',JSON.stringify(reservations));
   closeCancelModal();
-  showToast(`✗  [<${entry.song}>, ${entry.slotLabel}]  취소 완료`,'error');
-  selectedCancelId=null; selectedReason=null;
-  document.getElementById('cancel-reason-section').style.display='none';
   document.getElementById('cancel-submit-btn').disabled=true;
-  renderCancelList();
+  document.getElementById('cancel-submit-btn').textContent='처리 중...';
+  apiDelete(entry.id).then(()=>apiGet()).then(()=>{
+    showToast(`✗  [<${entry.song}>, ${entry.slotLabel}]  취소 완료`,'error');
+    selectedCancelId=null; selectedReason=null;
+    document.getElementById('cancel-reason-section').style.display='none';
+    document.getElementById('cancel-submit-btn').disabled=true;
+    document.getElementById('cancel-submit-btn').textContent='신청 취소하기';
+    renderCancelList();
+  });
 }
 
 // Toast
