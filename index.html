@@ -1,28 +1,25 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동아리방 사용 신청</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>LIT — 동아리방 신청</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface2: #1c1c27;
-    --border: #2a2a3d;
-    --accent: #7c5cfc;
-    --accent2: #c084fc;
-    --am: #38bdf8;
-    --pm: #fb923c;
-    --text: #e8e8f0;
-    --muted: #6b6b8a;
-    --success: #34d399;
-    --danger: #f87171;
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e0e0e0;
+    --muted: #444;
+    --muted2: #666;
+    --success: #7dff9a;
+    --danger: #ff6b6b;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -30,562 +27,349 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  /* Background grain */
+  /* Stars */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .star {
+    position: absolute; background: #fff; border-radius: 50%;
+    animation: twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);
+  }
+  @keyframes twinkle {
+    0%,100% { opacity: var(--min-op,0.1); transform: scale(1); }
+    50% { opacity: var(--max-op,0.6); transform: scale(1.4); }
+  }
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity:0.5;
   }
+  .container { position:relative; z-index:1; max-width:740px; margin:0 auto; padding:52px 20px 100px; }
 
-  .glow-orb {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .glow-orb-1 { width: 400px; height: 400px; background: rgba(124,92,252,0.12); top: -100px; left: -100px; }
-  .glow-orb-2 { width: 300px; height: 300px; background: rgba(251,146,60,0.08); bottom: -50px; right: -50px; }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 40px 20px 80px;
-  }
-
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-  .header-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    padding: 5px 16px;
-    border-radius: 100px;
-    margin-bottom: 16px;
-    text-transform: uppercase;
-  }
-  .header h1 {
-    font-size: clamp(28px, 6vw, 42px);
+  /* HEADER */
+  .header { text-align:center; margin-bottom:56px; }
+  .logo-text {
+    font-size: clamp(64px, 18vw, 108px);
     font-weight: 900;
-    background: linear-gradient(135deg, #fff 30%, var(--accent2));
+    line-height: 0.9;
+    letter-spacing: -3px;
+    background: linear-gradient(170deg,
+      #f0f0f0 0%, #b0b0b0 18%, #ffffff 36%,
+      #787878 52%, #d8d8d8 68%, #909090 84%, #ffffff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    line-height: 1.2;
-    margin-bottom: 10px;
+    filter: drop-shadow(0 0 40px rgba(255,255,255,0.15)) drop-shadow(0 4px 16px rgba(0,0,0,0.9));
   }
-  .header p {
-    color: var(--muted);
-    font-size: 14px;
+  .logo-gen {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--muted2);
     font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    margin-top: 6px;
   }
+  .header-sub {
+    font-size: 12px;
+    letter-spacing: 5px;
+    color: rgba(255,255,255,0.25);
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  .time-badges { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
   .time-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 12px;
-    font-family: 'Space Mono', monospace;
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--border2);
+    padding:7px 16px; border-radius:100px;
+    font-size:11px; color:var(--muted2);
+    font-family:'Space Mono',monospace;
   }
-  .time-badge span { color: var(--accent2); font-weight: 700; }
+  .day-type { color:rgba(255,255,255,0.6); font-weight:700; }
+  .hours-range { color:rgba(255,255,255,0.35); }
 
-  /* Tabs */
+  /* TABS */
   .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 5px;
-    margin-bottom: 32px;
+    display:flex; gap:3px;
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:16px; padding:5px; margin-bottom:26px;
   }
   .tab-btn {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 14px;
-    font-weight: 500;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: all 0.25s;
+    flex:1; padding:11px 6px; border:none; border-radius:12px;
+    background:transparent; color:var(--muted2);
+    font-size:13px; font-weight:500;
+    font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer; transition:all 0.25s;
   }
   .tab-btn.active {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-    font-weight: 700;
-    box-shadow: 0 4px 20px rgba(124,92,252,0.4);
+    background:linear-gradient(160deg,#222,#181818);
+    color:#fff; font-weight:700;
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 12px rgba(0,0,0,0.6);
   }
 
-  /* Panel */
-  .panel { display: none; }
-  .panel.active { display: block; animation: fadeUp 0.3s ease; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  /* PANELS */
+  .panel { display:none; }
+  .panel.active { display:block; animation:fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-  /* Form */
+  /* FORM CARD */
   .form-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 32px;
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:22px; padding:32px;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.02) inset, 0 24px 60px rgba(0,0,0,0.7);
   }
-  .form-section-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    margin-top: 24px;
+  .section-label {
+    font-size:10px; font-weight:700; letter-spacing:3px;
+    color:var(--muted); text-transform:uppercase;
+    margin-bottom:10px; margin-top:26px;
+    font-family:'Space Mono',monospace;
   }
-  .form-section-title:first-child { margin-top: 0; }
-
+  .section-label:first-child { margin-top:0; }
   .form-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 18px;
-    color: var(--text);
-    font-size: 15px;
-    font-family: 'Noto Sans KR', sans-serif;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    width:100%; background:var(--surface2);
+    border:1px solid var(--border2); border-radius:12px;
+    padding:14px 18px; color:var(--text);
+    font-size:15px; font-family:'Noto Sans KR',sans-serif;
+    outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance:none;
   }
-  .form-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124,92,252,0.15);
-  }
-  .form-input::placeholder { color: var(--muted); }
+  .form-input:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
+  .form-input::placeholder { color:var(--muted); }
 
-  /* Date + time grid */
-  .date-time-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  /* Time range */
+  .time-range-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .time-select-label { font-size:10px; color:var(--muted); margin-bottom:6px; display:block; font-family:'Space Mono',monospace; letter-spacing:1px; }
+  .time-select {
+    width:100%; background:var(--surface2);
+    border:1px solid var(--border2); border-radius:12px;
+    padding:14px 36px 14px 18px; color:var(--text);
+    font-size:14px; font-family:'Space Mono',monospace;
+    outline:none; cursor:pointer;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
   }
+  .time-select:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
+  .time-select option { background:#181818; }
 
-  /* Period selector */
-  .period-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 0;
+  .hours-notice {
+    display:none; background:rgba(255,107,107,0.07);
+    border:1px solid rgba(255,107,107,0.22); border-radius:10px;
+    padding:11px 15px; font-size:12px; color:var(--danger);
+    margin-top:10px; font-family:'Space Mono',monospace;
   }
-  .period-btn {
-    position: relative;
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    border-radius: 14px;
-    padding: 18px 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    color: var(--muted);
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-  .period-btn .period-icon { font-size: 24px; display: block; margin-bottom: 6px; }
-  .period-btn .period-label { font-size: 16px; font-weight: 700; display: block; }
-  .period-btn .period-range { font-size: 11px; font-family: 'Space Mono', monospace; display: block; margin-top: 3px; }
-  .period-btn.am.selected {
-    border-color: var(--am);
-    background: rgba(56,189,248,0.08);
-    color: var(--am);
-    box-shadow: 0 0 0 3px rgba(56,189,248,0.1);
-  }
-  .period-btn.pm.selected {
-    border-color: var(--pm);
-    background: rgba(251,146,60,0.08);
-    color: var(--pm);
-    box-shadow: 0 0 0 3px rgba(251,146,60,0.1);
-  }
-  .period-btn:hover:not(.selected) {
-    border-color: var(--accent);
-    color: var(--text);
-  }
+  .hours-notice.visible { display:block; }
 
-  /* Time slots */
-  .time-slots {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 8px;
-    margin-top: 8px;
+  /* Timeline */
+  .timeline-preview {
+    margin-top:14px; background:var(--surface2);
+    border:1px solid var(--border2); border-radius:14px;
+    padding:16px 18px; display:none;
   }
-  .time-slot {
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 8px;
-    text-align: center;
-    cursor: pointer;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    transition: all 0.18s;
-    color: var(--muted);
-    user-select: none;
+  .timeline-preview.visible { display:block; }
+  .timeline-summary { font-family:'Space Mono',monospace; font-size:12px; color:rgba(255,255,255,0.6); font-weight:700; margin-bottom:10px; }
+  .timeline-bar-wrap {
+    position:relative; height:7px;
+    background:rgba(255,255,255,0.05);
+    border-radius:100px; overflow:hidden; margin-bottom:8px;
   }
-  .time-slot:hover:not(.taken):not(.selected) {
-    border-color: var(--accent);
-    color: var(--text);
+  .timeline-bar-fill {
+    position:absolute; height:100%;
+    background:linear-gradient(90deg,#777,#fff,#999);
+    border-radius:100px; transition:left 0.3s,width 0.3s;
+    box-shadow:0 0 10px rgba(255,255,255,0.35);
   }
-  .time-slot.selected.am-slot {
-    border-color: var(--am);
-    background: rgba(56,189,248,0.12);
-    color: var(--am);
-    font-weight: 700;
-  }
-  .time-slot.selected.pm-slot {
-    border-color: var(--pm);
-    background: rgba(251,146,60,0.12);
-    color: var(--pm);
-    font-weight: 700;
-  }
-  .time-slot.taken {
-    opacity: 0.35;
-    cursor: not-allowed;
-    text-decoration: line-through;
-  }
-  .time-slot .slot-label { display: block; font-size: 10px; margin-top: 2px; }
-  .time-slot.taken .slot-label { color: var(--danger); font-size: 9px; }
+  .timeline-bar-blocked { position:absolute; height:100%; background:rgba(255,107,107,0.4); }
+  .timeline-labels { display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:9px; color:var(--muted2); }
+  .timeline-conflict { font-size:12px; color:var(--danger); margin-top:8px; font-family:'Space Mono',monospace; display:none; }
+  .timeline-conflict.visible { display:block; }
 
   /* Submit */
   .submit-btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    margin-top: 24px;
-    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-    box-shadow: 0 4px 24px rgba(124,92,252,0.35);
+    width:100%; padding:16px; border:none; border-radius:14px;
+    background:linear-gradient(160deg,#222,#1a1a1a);
+    border:1px solid rgba(255,255,255,0.14); color:#fff;
+    font-size:14px; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer; margin-top:26px; transition:all 0.2s;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 20px rgba(0,0,0,0.5);
+    letter-spacing:1px; position:relative; overflow:hidden;
   }
-  .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(124,92,252,0.5); }
-  .submit-btn:active { transform: translateY(0); }
-  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 1000;
-    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
-    opacity: 0;
-    white-space: nowrap;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .submit-btn::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,transparent 0%,rgba(255,255,255,0.05) 50%,transparent 100%);
   }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-  .toast.success { border-color: var(--success); color: var(--success); }
-  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .submit-btn:hover:not(:disabled) {
+    border-color:rgba(255,255,255,0.28);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.12), 0 0 28px rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.5);
+    transform:translateY(-1px);
+  }
+  .submit-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
+  .cancel-submit-btn {
+    background:linear-gradient(160deg,#1f1212,#181010) !important;
+    border-color:rgba(255,107,107,0.18) !important;
+  }
+  .cancel-submit-btn:hover:not(:disabled) {
+    border-color:rgba(255,107,107,0.38) !important;
+    box-shadow:inset 0 1px 0 rgba(255,107,107,0.08), 0 0 28px rgba(255,60,60,0.08), 0 4px 20px rgba(0,0,0,0.5) !important;
+  }
 
   /* List */
-  .list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
+  .list-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
   .list-date-filter {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Space Mono', monospace;
-    outline: none;
-    cursor: pointer;
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:10px; padding:9px 14px; color:var(--text);
+    font-size:12px; font-family:'Space Mono',monospace;
+    outline:none; -webkit-appearance:none; cursor:pointer;
   }
-  .list-date-filter:focus { border-color: var(--accent); }
-
-  .filter-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+  .list-date-filter:focus { border-color:rgba(255,255,255,0.25); }
+  .total-badge {
+    background:var(--surface2); border:1px solid var(--border2);
+    padding:6px 12px; border-radius:8px;
+    font-size:11px; font-family:'Space Mono',monospace; color:var(--muted2);
   }
-  .filter-chip {
-    background: var(--surface2);
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 7px 14px;
-    font-size: 12px;
-    cursor: pointer;
-    color: var(--muted);
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.2s;
-  }
-  .filter-chip.active { border-color: var(--accent); color: var(--accent2); background: rgba(124,92,252,0.1); }
+  .total-badge span { color:#fff; font-weight:700; }
 
   .entry-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px 22px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: border-color 0.2s, transform 0.15s;
-    animation: fadeUp 0.3s ease;
+    background:var(--surface); border:1px solid var(--border2);
+    border-left:2px solid rgba(255,255,255,0.18);
+    border-radius:16px; padding:18px 20px; margin-bottom:8px;
+    display:flex; align-items:center; gap:14px;
+    transition:all 0.2s; animation:fadeUp 0.3s ease;
   }
-  .entry-card:hover { border-color: var(--border); transform: translateX(3px); }
-  .entry-card.am-card { border-left: 3px solid var(--am); }
-  .entry-card.pm-card { border-left: 3px solid var(--pm); }
+  .entry-card:hover { transform:translateX(3px); border-left-color:rgba(255,255,255,0.45); }
+  .entry-icon {
+    width:40px; height:40px; border-radius:10px;
+    background:var(--surface2); border:1px solid var(--border2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:17px; flex-shrink:0;
+  }
+  .entry-info { flex:1; min-width:0; }
+  .entry-song { font-size:14px; font-weight:700; color:rgba(255,255,255,0.88); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .entry-meta { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted2); }
+  .entry-formatted { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.25); margin-top:3px; }
 
-  .entry-period-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-  .entry-period-icon.am { background: rgba(56,189,248,0.12); }
-  .entry-period-icon.pm { background: rgba(251,146,60,0.12); }
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted2); }
+  .empty-state .empty-icon { font-size:38px; margin-bottom:14px; opacity:0.35; }
+  .empty-state p { font-size:13px; }
 
-  .entry-info { flex: 1; min-width: 0; }
-  .entry-song {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
+  /* Cancel cards */
+  .cancel-entry-card {
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:14px; padding:15px 18px; margin-bottom:8px;
+    display:flex; align-items:center; gap:14px;
+    cursor:pointer; transition:all 0.2s; user-select:none;
   }
-  .entry-meta {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
+  .cancel-entry-card:hover { border-color:rgba(255,255,255,0.2); }
+  .cancel-entry-card.selected { border-color:rgba(255,107,107,0.38); background:rgba(255,107,107,0.05); }
+  .cancel-radio {
+    width:20px; height:20px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.12); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; transition:all 0.2s;
   }
-  .entry-tag {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 6px;
-    letter-spacing: 1px;
-    flex-shrink: 0;
-  }
-  .entry-tag.am { background: rgba(56,189,248,0.15); color: var(--am); }
-  .entry-tag.pm { background: rgba(251,146,60,0.15); color: var(--pm); }
+  .cancel-entry-card.selected .cancel-radio { border-color:var(--danger); background:var(--danger); }
+  .cancel-radio-dot { width:8px; height:8px; border-radius:50%; background:#fff; opacity:0; transition:opacity 0.2s; }
+  .cancel-entry-card.selected .cancel-radio-dot { opacity:1; }
+  .cancel-entry-info { flex:1; min-width:0; }
+  .cancel-entry-song { font-size:14px; font-weight:700; color:rgba(255,255,255,0.85); margin-bottom:3px; }
+  .cancel-entry-meta { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted2); }
 
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
+  /* Reason */
+  .reason-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .reason-btn {
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:12px; padding:13px 12px;
+    color:var(--muted2); font-size:13px; font-weight:500;
+    font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer; transition:all 0.2s; text-align:center;
   }
-  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
-  .empty-state p { font-size: 15px; }
-
-  .total-badge {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-family: 'Space Mono', monospace;
-    color: var(--muted);
-  }
-  .total-badge span { color: var(--accent2); font-weight: 700; }
+  .reason-btn:hover:not(.selected) { border-color:rgba(255,255,255,0.2); color:var(--text); }
+  .reason-btn.selected { border-color:rgba(255,107,107,0.38); background:rgba(255,107,107,0.07); color:var(--danger); }
 
   /* Modal */
   .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(6px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
+    position:fixed; inset:0; background:rgba(0,0,0,0.82);
+    z-index:500; display:flex; align-items:center; justify-content:center;
+    padding:20px; backdrop-filter:blur(10px);
+    opacity:0; pointer-events:none; transition:opacity 0.25s;
   }
-  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+  .modal-backdrop.open { opacity:1; pointer-events:all; }
   .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 32px;
-    max-width: 440px;
-    width: 100%;
-    transform: scale(0.92);
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
-    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    background:#0f0f0f; border:1px solid rgba(255,255,255,0.11);
+    border-radius:22px; padding:32px; max-width:420px; width:100%;
+    transform:scale(0.92); transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.03) inset, 0 32px 80px rgba(0,0,0,0.9);
   }
-  .modal-backdrop.open .modal { transform: scale(1); }
-  .modal h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
-  .modal p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+  .modal-backdrop.open .modal { transform:scale(1); }
+  .modal h3 { font-size:18px; font-weight:900; margin-bottom:6px; color:#fff; }
+  .modal p { color:var(--muted2); font-size:13px; line-height:1.6; margin-bottom:20px; }
   .modal-highlight {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 24px;
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    color: var(--accent2);
-    line-height: 1.7;
+    background:var(--surface2); border:1px solid rgba(255,255,255,0.09);
+    border-radius:12px; padding:16px; margin-bottom:22px;
+    font-family:'Space Mono',monospace; font-size:12px;
+    color:rgba(255,255,255,0.55); line-height:1.9; white-space:pre;
   }
-  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns { display:flex; gap:10px; }
   .modal-btn {
-    flex: 1;
-    padding: 13px;
-    border: none;
-    border-radius: 11px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.15s;
+    flex:1; padding:13px; border:none; border-radius:11px;
+    font-size:14px; font-weight:700;
+    cursor:pointer; font-family:'Noto Sans KR',sans-serif; transition:all 0.15s;
   }
-  .modal-btn.cancel { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
-  .modal-btn.cancel:hover { color: var(--text); }
-  .modal-btn.confirm { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 4px 16px rgba(124,92,252,0.3); }
-  .modal-btn.confirm:hover { opacity: 0.9; }
-
-  .cancel-submit-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(248,113,113,0.45) !important; }
-
-  /* Reason grid */
-  .reason-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+  .modal-btn.cancel { background:var(--surface2); border:1px solid var(--border2); color:var(--muted2); }
+  .modal-btn.cancel:hover { color:#fff; }
+  .modal-btn.confirm {
+    background:linear-gradient(135deg,#252525,#333);
+    border:1px solid rgba(255,255,255,0.18); color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);
   }
-  .reason-btn {
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    border-radius: 13px;
-    padding: 14px 12px;
-    color: var(--muted);
-    font-size: 14px;
-    font-weight: 600;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-  .reason-btn:hover:not(.selected) { border-color: var(--accent); color: var(--text); }
-  .reason-btn.selected {
-    border-color: var(--danger);
-    background: rgba(248,113,113,0.1);
-    color: var(--danger);
-    box-shadow: 0 0 0 3px rgba(248,113,113,0.12);
-  }
-
-  /* Cancel reservation cards */
-  .cancel-entry-card {
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    user-select: none;
-  }
-  .cancel-entry-card:hover { border-color: var(--danger); }
-  .cancel-entry-card.selected {
-    border-color: var(--danger);
-    background: rgba(248,113,113,0.07);
-    box-shadow: 0 0 0 3px rgba(248,113,113,0.1);
-  }
-  .cancel-radio {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-  .cancel-entry-card.selected .cancel-radio {
-    border-color: var(--danger);
-    background: var(--danger);
-  }
-  .cancel-radio-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #fff;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .cancel-entry-card.selected .cancel-radio-dot { opacity: 1; }
-  .cancel-entry-info { flex: 1; min-width: 0; }
-  .cancel-entry-song { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-  .cancel-entry-meta { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
-
-  /* Cancel confirm modal */
+  .modal-btn.confirm:hover { border-color:rgba(255,255,255,0.32); }
   .cancel-confirm .modal-btn.confirm {
-    background: linear-gradient(135deg, #f87171, #fb923c);
-    box-shadow: 0 4px 16px rgba(248,113,113,0.3);
+    background:linear-gradient(135deg,#251212,#351a1a);
+    border-color:rgba(255,107,107,0.28); color:var(--danger);
   }
 
-  @media (max-width: 480px) {
-    .reason-grid { grid-template-columns: 1fr; }
+  /* Toast */
+  .toast {
+    position:fixed; bottom:32px; left:50%;
+    transform:translateX(-50%) translateY(80px);
+    background:#0f0f0f; border:1px solid rgba(255,255,255,0.12);
+    border-radius:100px; padding:12px 24px;
+    font-size:12px; font-weight:700; z-index:1000;
+    transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+    opacity:0; white-space:nowrap;
+    box-shadow:0 8px 40px rgba(0,0,0,0.8);
+    font-family:'Space Mono',monospace; letter-spacing:0.5px;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+  .toast.success { border-color:rgba(125,255,154,0.28); color:var(--success); }
+  .toast.error   { border-color:rgba(255,107,107,0.28); color:var(--danger); }
+
+  @media(max-width:480px) {
+    .time-range-row,.reason-grid { grid-template-columns:1fr; }
+    .form-card { padding:22px; }
+    .time-badges { flex-direction:column; align-items:center; }
   }
 </style>
 </head>
 <body>
-<div class="glow-orb glow-orb-1"></div>
-<div class="glow-orb glow-orb-2"></div>
+
+<div class="stars" id="stars"></div>
 
 <div class="container">
+  <!-- Header -->
   <div class="header">
-    <div class="header-badge">🎵 LIT</div>
-    <h1>동아리방 사용 신청</h1>
-    <div class="time-badge">운영시간 <span>09:00 — 22:00</span></div>
+    <div class="logo-text">LiT</div>
+    <span class="logo-gen">5th</span>
+    <div class="header-sub">동아리방 사용 신청</div>
+    <div class="time-badges">
+      <div class="time-badge"><span class="day-type">평일</span><span class="hours-range">06:00 — 22:00</span></div>
+      <div class="time-badge"><span class="day-type">주말</span><span class="hours-range">09:00 — 17:00</span></div>
+    </div>
   </div>
 
+  <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('apply')">✏️ 사용 신청</button>
     <button class="tab-btn" onclick="switchTab('list')">📋 신청 명단</button>
@@ -595,29 +379,38 @@
   <!-- Apply Panel -->
   <div id="panel-apply" class="panel active">
     <div class="form-card">
-      <div class="form-section-title">🎸 곡 이름</div>
+      <div class="section-label">곡 이름</div>
       <input type="text" class="form-input" id="song-name" placeholder="연습할 곡 이름을 입력하세요" />
 
-      <div class="form-section-title">📅 날짜 선택</div>
-      <input type="date" class="form-input" id="apply-date" />
+      <div class="section-label">날짜 선택</div>
+      <input type="date" class="form-input" id="apply-date" onchange="onDateChange()" />
 
-      <div class="form-section-title">🌤 시간대 선택</div>
-      <div class="period-row">
-        <button class="period-btn am" id="btn-am" onclick="selectPeriod('am')">
-          <span class="period-icon">🌅</span>
-          <span class="period-label">오전</span>
-          <span class="period-range">09:00 — 13:00</span>
-        </button>
-        <button class="period-btn pm" id="btn-pm" onclick="selectPeriod('pm')">
-          <span class="period-icon">🌇</span>
-          <span class="period-label">오후</span>
-          <span class="period-range">13:00 — 22:00</span>
-        </button>
+      <div class="section-label">사용 시간 선택</div>
+      <div class="time-range-row">
+        <div>
+          <span class="time-select-label">시작 시간</span>
+          <select class="time-select" id="start-time" onchange="onTimeChange()">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
+        <div>
+          <span class="time-select-label">종료 시간</span>
+          <select class="time-select" id="end-time" onchange="onTimeChange()">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
       </div>
 
-      <div id="time-slot-section" style="display:none;">
-        <div class="form-section-title">⏰ 세부 시간 선택</div>
-        <div class="time-slots" id="time-slots-grid"></div>
+      <div class="hours-notice" id="hours-notice">⚠️ 운영 시간 외에는 신청할 수 없어요</div>
+
+      <div class="timeline-preview" id="timeline-preview">
+        <div class="timeline-summary" id="timeline-summary"></div>
+        <div class="timeline-bar-wrap">
+          <div id="timeline-blocked-container"></div>
+          <div class="timeline-bar-fill" id="timeline-fill"></div>
+        </div>
+        <div class="timeline-labels" id="timeline-labels"></div>
+        <div class="timeline-conflict" id="timeline-conflict">⚠️ 기존 신청과 시간이 겹칩니다</div>
       </div>
 
       <button class="submit-btn" id="submit-btn" onclick="openConfirmModal()" disabled>신청하기</button>
@@ -627,11 +420,7 @@
   <!-- List Panel -->
   <div id="panel-list" class="panel">
     <div class="list-header">
-      <div class="filter-row" style="margin-bottom:0; gap:8px;">
-        <button class="filter-chip active" onclick="setFilter('all',this)">전체</button>
-        <button class="filter-chip" onclick="setFilter('am',this)">🌅 오전</button>
-        <button class="filter-chip" onclick="setFilter('pm',this)">🌇 오후</button>
-      </div>
+      <div></div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="date" class="list-date-filter" id="list-date-filter" onchange="renderList()" />
         <div class="total-badge">총 <span id="total-count">0</span>건</div>
@@ -643,31 +432,31 @@
   <!-- Cancel Panel -->
   <div id="panel-cancel" class="panel">
     <div class="form-card">
-      <div class="form-section-title">📅 날짜 선택</div>
+      <div class="section-label">날짜 선택</div>
       <input type="date" class="form-input" id="cancel-date" onchange="renderCancelList()" />
 
-      <div class="form-section-title">🗂️ 취소할 신청 선택</div>
+      <div class="section-label">취소할 신청 선택</div>
       <div id="cancel-list-container">
         <div class="empty-state" style="padding:30px 0;">
-          <div class="empty-icon" style="font-size:32px;">📅</div>
-          <p style="font-size:13px;">날짜를 선택하면 신청 목록이 표시돼요</p>
+          <div class="empty-icon">📅</div>
+          <p>날짜를 선택하면 신청 목록이 표시돼요</p>
         </div>
       </div>
 
       <div id="cancel-reason-section" style="display:none;">
-        <div class="form-section-title">❓ 취소 사유</div>
-        <div class="reason-grid" id="reason-grid">
-          <button class="reason-btn" onclick="selectReason('시간 조정', this)">🔄 시간 조정</button>
-          <button class="reason-btn" onclick="selectReason('연습 취소', this)">🚫 연습 취소</button>
-          <button class="reason-btn" onclick="selectReason('신청 실수', this)">✏️ 신청 실수</button>
-          <button class="reason-btn" onclick="selectReason('기타', this)">💬 기타 (직접 입력)</button>
+        <div class="section-label">취소 사유</div>
+        <div class="reason-grid">
+          <button class="reason-btn" onclick="selectReason('시간 조정',this)">🔄 시간 조정</button>
+          <button class="reason-btn" onclick="selectReason('연습 취소',this)">🚫 연습 취소</button>
+          <button class="reason-btn" onclick="selectReason('신청 실수',this)">✏️ 신청 실수</button>
+          <button class="reason-btn" onclick="selectReason('기타',this)">💬 기타 (직접 입력)</button>
         </div>
-        <div id="reason-custom-wrap" style="display:none; margin-top:12px;">
+        <div id="reason-custom-wrap" style="display:none;margin-top:12px;">
           <input type="text" class="form-input" id="reason-custom" placeholder="취소 사유를 직접 입력해주세요" oninput="checkCancelSubmit()" />
         </div>
       </div>
 
-      <button class="submit-btn cancel-submit-btn" id="cancel-submit-btn" onclick="openCancelConfirmModal()" disabled style="background: linear-gradient(135deg,#f87171,#fb923c); box-shadow: 0 4px 24px rgba(248,113,113,0.35);">신청 취소하기</button>
+      <button class="submit-btn cancel-submit-btn" id="cancel-submit-btn" onclick="openCancelConfirmModal()" disabled>신청 취소하기</button>
     </div>
   </div>
 </div>
@@ -675,7 +464,7 @@
 <!-- Confirm Modal -->
 <div class="modal-backdrop" id="confirm-modal">
   <div class="modal">
-    <h3>📋 신청 확인</h3>
+    <h3>신청 확인</h3>
     <p>아래 내용으로 동아리방 사용을 신청할까요?</p>
     <div class="modal-highlight" id="modal-summary"></div>
     <div class="modal-btns">
@@ -688,7 +477,7 @@
 <!-- Cancel Confirm Modal -->
 <div class="modal-backdrop cancel-confirm" id="cancel-confirm-modal">
   <div class="modal">
-    <h3>🗑️ 취소 확인</h3>
+    <h3>취소 확인</h3>
     <p>아래 신청을 정말 취소할까요? 이 작업은 되돌릴 수 없어요.</p>
     <div class="modal-highlight" id="cancel-modal-summary"></div>
     <div class="modal-btns">
@@ -701,327 +490,255 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ---- State ----
-let reservations = JSON.parse(localStorage.getItem('club_reservations') || '[]');
-let selectedPeriod = null;
-let selectedSlot = null;
-let currentFilter = 'all';
+// Stars
+(function(){
+  const c = document.getElementById('stars');
+  for(let i=0;i<130;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    const sz = Math.random()*1.8+0.4;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:-${(Math.random()*8).toFixed(1)}s;--min-op:${(Math.random()*0.08).toFixed(2)};--max-op:${(Math.random()*0.55+0.15).toFixed(2)};`;
+    c.appendChild(s);
+  }
+})();
 
-const AM_SLOTS = [
-  { label: '09:00-10:00', start: 9 },
-  { label: '10:00-11:00', start: 10 },
-  { label: '11:00-12:00', start: 11 },
-  { label: '12:00-13:00', start: 12 },
-];
-const PM_SLOTS = [
-  { label: '13:00-14:00', start: 13 },
-  { label: '14:00-15:00', start: 14 },
-  { label: '15:00-16:00', start: 15 },
-  { label: '16:00-17:00', start: 16 },
-  { label: '17:00-18:00', start: 17 },
-  { label: '18:00-19:00', start: 18 },
-  { label: '19:00-20:00', start: 19 },
-  { label: '20:00-21:00', start: 20 },
-  { label: '21:00-22:00', start: 21 },
-];
+// State
+let reservations = JSON.parse(localStorage.getItem('club_reservations')||'[]');
 
-// ---- Init ----
-function init() {
+// Hours
+function getHours(dateStr){
+  if(!dateStr) return {start:6,end:22};
+  const day = new Date(dateStr+'T00:00:00').getDay();
+  return (day===0||day===6) ? {start:9,end:17} : {start:6,end:22};
+}
+
+// Init
+function init(){
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('apply-date').value = today;
   document.getElementById('list-date-filter').value = '';
+  buildTimeSelects(today);
   checkSubmit();
   renderList();
 }
 
-// ---- Tabs ----
-function switchTab(tab) {
-  const tabs = ['apply', 'list', 'cancel'];
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', tabs[i] === tab);
+function buildTimeSelects(dateStr){
+  const h = getHours(dateStr);
+  const ss = document.getElementById('start-time');
+  const es = document.getElementById('end-time');
+  ss.innerHTML = '<option value="">-- 선택 --</option>';
+  es.innerHTML = '<option value="">-- 선택 --</option>';
+  for(let i=h.start;i<h.end;i++) ss.innerHTML+=`<option value="${i}">${String(i).padStart(2,'0')}:00</option>`;
+  for(let i=h.start+1;i<=h.end;i++) es.innerHTML+=`<option value="${i}">${String(i).padStart(2,'0')}:00</option>`;
+  const mid = Math.floor((h.start+h.end)/2);
+  document.getElementById('timeline-labels').innerHTML=
+    `<span>${String(h.start).padStart(2,'0')}:00</span><span>${String(mid).padStart(2,'0')}:00</span><span>${String(h.end).padStart(2,'0')}:00</span>`;
+}
+
+function onDateChange(){
+  const d = document.getElementById('apply-date').value;
+  document.getElementById('start-time').value='';
+  document.getElementById('end-time').value='';
+  document.getElementById('timeline-preview').classList.remove('visible');
+  document.getElementById('hours-notice').classList.remove('visible');
+  buildTimeSelects(d);
+  checkSubmit();
+}
+
+function onTimeChange(){
+  const start = parseInt(document.getElementById('start-time').value);
+  const end   = parseInt(document.getElementById('end-time').value);
+  const date  = document.getElementById('apply-date').value;
+  const h     = getHours(date);
+  const preview = document.getElementById('timeline-preview');
+  const notice  = document.getElementById('hours-notice');
+  notice.classList.remove('visible');
+  if(!start||!end){preview.classList.remove('visible');checkSubmit();return;}
+  if(end<=start){preview.classList.remove('visible');checkSubmit();return;}
+  if(start<h.start||end>h.end){notice.classList.add('visible');preview.classList.remove('visible');checkSubmit();return;}
+
+  const dayRes = reservations.filter(r=>r.date===date);
+  const bc = document.getElementById('timeline-blocked-container');
+  bc.innerHTML='';
+  const TOTAL = h.end-h.start;
+  dayRes.forEach(r=>{
+    const [rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));
+    const d=document.createElement('div');
+    d.className='timeline-bar-blocked';
+    d.style.cssText=`left:${((rs-h.start)/TOTAL*100).toFixed(2)}%;width:${((re-rs)/TOTAL*100).toFixed(2)}%`;
+    bc.appendChild(d);
   });
-  tabs.forEach(t => {
-    document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+  document.getElementById('timeline-fill').style.cssText=
+    `left:${((start-h.start)/TOTAL*100).toFixed(2)}%;width:${((end-start)/TOTAL*100).toFixed(2)}%`;
+  document.getElementById('timeline-summary').textContent=
+    `${String(start).padStart(2,'0')}:00 — ${String(end).padStart(2,'0')}:00  (${end-start}시간)`;
+  const conflict=dayRes.some(r=>{const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;});
+  document.getElementById('timeline-conflict').classList.toggle('visible',conflict);
+  preview.classList.add('visible');
+  checkSubmit();
+}
+
+function checkSubmit(){
+  const song=document.getElementById('song-name').value.trim();
+  const date=document.getElementById('apply-date').value;
+  const start=parseInt(document.getElementById('start-time').value);
+  const end=parseInt(document.getElementById('end-time').value);
+  const h=getHours(date);
+  if(!song||!date||!start||!end||end<=start||start<h.start||end>h.end){
+    document.getElementById('submit-btn').disabled=true;return;
+  }
+  const conflict=reservations.filter(r=>r.date===date).some(r=>{
+    const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;
   });
-  if (tab === 'list') renderList();
-  if (tab === 'cancel') {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('cancel-date').value = today;
+  document.getElementById('submit-btn').disabled=conflict;
+}
+document.getElementById('song-name').addEventListener('input',checkSubmit);
+
+// Tabs
+function switchTab(tab){
+  ['apply','list','cancel'].forEach((t,i)=>{
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===tab);
+    document.getElementById(`panel-${t}`).classList.toggle('active',t===tab);
+  });
+  if(tab==='list') renderList();
+  if(tab==='cancel'){
+    document.getElementById('cancel-date').value=new Date().toISOString().split('T')[0];
     renderCancelList();
   }
 }
 
-// ---- Period ----
-function selectPeriod(period) {
-  selectedPeriod = period;
-  selectedSlot = null;
-  document.getElementById('btn-am').classList.toggle('selected', period === 'am');
-  document.getElementById('btn-pm').classList.toggle('selected', period === 'pm');
-  renderTimeSlots();
-  document.getElementById('time-slot-section').style.display = 'block';
-  checkSubmit();
-}
-
-function renderTimeSlots() {
-  const date = document.getElementById('apply-date').value;
-  const slots = selectedPeriod === 'am' ? AM_SLOTS : PM_SLOTS;
-  const takenSlots = reservations
-    .filter(r => r.date === date)
-    .map(r => r.slotLabel);
-
-  const grid = document.getElementById('time-slots-grid');
-  grid.innerHTML = slots.map(s => {
-    const taken = takenSlots.includes(s.label);
-    const cls = `time-slot ${selectedPeriod}-slot ${taken ? 'taken' : ''}`;
-    return `<div class="${cls}" onclick="selectSlot('${s.label}', ${taken})" id="slot-${s.start}">
-      ${s.label}
-      ${taken ? '<span class="slot-label">사용 중</span>' : ''}
-    </div>`;
-  }).join('');
-}
-
-function selectSlot(label, taken) {
-  if (taken) { showToast('⚠️ 이미 신청된 시간대입니다.', 'error'); return; }
-  selectedSlot = label;
-  document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
-  const slots = selectedPeriod === 'am' ? AM_SLOTS : PM_SLOTS;
-  const s = slots.find(x => x.label === label);
-  if (s) document.getElementById(`slot-${s.start}`)?.classList.add('selected');
-  checkSubmit();
-}
-
-function checkSubmit() {
-  const song = document.getElementById('song-name').value.trim();
-  const date = document.getElementById('apply-date').value;
-  const ok = song && date && selectedPeriod && selectedSlot;
-  document.getElementById('submit-btn').disabled = !ok;
-}
-
-document.getElementById('song-name').addEventListener('input', checkSubmit);
-document.getElementById('apply-date').addEventListener('change', () => {
-  selectedSlot = null;
-  if (selectedPeriod) renderTimeSlots();
-  checkSubmit();
-});
-
-// ---- Modal ----
-function openConfirmModal() {
-  const song = document.getElementById('song-name').value.trim();
-  const date = document.getElementById('apply-date').value;
-  const period = selectedPeriod === 'am' ? '오전' : '오후';
-  document.getElementById('modal-summary').innerHTML =
-    `🎵 곡 이름: ${song}\n📅 날짜: ${date}\n${selectedPeriod === 'am' ? '🌅' : '🌇'} 시간대: ${period}\n⏰ 시간: ${selectedSlot}`;
+// Modal
+function openConfirmModal(){
+  const song=document.getElementById('song-name').value.trim();
+  const date=document.getElementById('apply-date').value;
+  const start=parseInt(document.getElementById('start-time').value);
+  const end=parseInt(document.getElementById('end-time').value);
+  document.getElementById('modal-summary').innerHTML=
+    `🎵  ${song}\n📅  ${date}\n⏰  ${String(start).padStart(2,'0')}:00 — ${String(end).padStart(2,'0')}:00  (${end-start}시간)`;
   document.getElementById('confirm-modal').classList.add('open');
 }
-function closeModal() {
-  document.getElementById('confirm-modal').classList.remove('open');
-}
-document.getElementById('confirm-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
+function closeModal(){document.getElementById('confirm-modal').classList.remove('open');}
+document.getElementById('confirm-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
-// ---- Submit ----
-function submitReservation() {
-  const song = document.getElementById('song-name').value.trim();
-  const date = document.getElementById('apply-date').value;
-
-  // Double-check overlap
-  const conflict = reservations.find(r => r.date === date && r.slotLabel === selectedSlot);
-  if (conflict) { showToast('⚠️ 이미 신청된 시간입니다.', 'error'); closeModal(); return; }
-
-  const entry = {
-    id: Date.now(),
-    song,
-    date,
-    period: selectedPeriod,
-    slotLabel: selectedSlot,
-    createdAt: new Date().toISOString()
-  };
-  reservations.push(entry);
-  localStorage.setItem('club_reservations', JSON.stringify(reservations));
-
+// Submit
+function submitReservation(){
+  const song=document.getElementById('song-name').value.trim();
+  const date=document.getElementById('apply-date').value;
+  const start=parseInt(document.getElementById('start-time').value);
+  const end=parseInt(document.getElementById('end-time').value);
+  const slotLabel=`${String(start).padStart(2,'0')}:00-${String(end).padStart(2,'0')}:00`;
+  const conflict=reservations.filter(r=>r.date===date).some(r=>{
+    const[rs,re]=r.slotLabel.split('-').map(t=>parseInt(t));return start<re&&end>rs;
+  });
+  if(conflict){showToast('⚠️ 이미 신청된 시간입니다','error');closeModal();return;}
+  reservations.push({id:Date.now(),song,date,slotLabel,createdAt:new Date().toISOString()});
+  localStorage.setItem('club_reservations',JSON.stringify(reservations));
   closeModal();
-  showToast(`✅ [<${song}>, ${selectedPeriod === 'am' ? '오전' : '오후'}] 신청 완료!`, 'success');
-
-  // Reset
-  document.getElementById('song-name').value = '';
-  selectedPeriod = null;
-  selectedSlot = null;
-  document.getElementById('btn-am').classList.remove('selected');
-  document.getElementById('btn-pm').classList.remove('selected');
-  document.getElementById('time-slot-section').style.display = 'none';
+  showToast(`✓  [<${song}>, ${slotLabel}]  신청 완료`,'success');
+  document.getElementById('song-name').value='';
+  document.getElementById('start-time').value='';
+  document.getElementById('end-time').value='';
+  document.getElementById('timeline-preview').classList.remove('visible');
   checkSubmit();
 }
 
-// ---- List ----
-function setFilter(f, el) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  renderList();
-}
-
-function renderList() {
-  const dateFilter = document.getElementById('list-date-filter').value;
-  let filtered = reservations;
-  if (dateFilter) filtered = filtered.filter(r => r.date === dateFilter);
-  if (currentFilter !== 'all') filtered = filtered.filter(r => r.period === currentFilter);
-  filtered = [...filtered].sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.slotLabel.localeCompare(b.slotLabel);
-  });
-
-  document.getElementById('total-count').textContent = filtered.length;
-  const container = document.getElementById('list-container');
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📭</div>
-      <p>${dateFilter ? '해당 날짜에 신청 내역이 없어요.' : '아직 신청 내역이 없어요.'}</p>
-    </div>`;
+// List
+function renderList(){
+  const df=document.getElementById('list-date-filter').value;
+  let filtered=[...reservations];
+  if(df) filtered=filtered.filter(r=>r.date===df);
+  filtered.sort((a,b)=>a.date!==b.date?a.date.localeCompare(b.date):a.slotLabel.localeCompare(b.slotLabel));
+  document.getElementById('total-count').textContent=filtered.length;
+  const c=document.getElementById('list-container');
+  if(!filtered.length){
+    c.innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p>${df?'해당 날짜에 신청 내역이 없어요':'아직 신청 내역이 없어요'}</p></div>`;
     return;
   }
-
-  container.innerHTML = filtered.map(r => {
-    const periodLabel = r.period === 'am' ? '오전' : '오후';
-    const icon = r.period === 'am' ? '🌅' : '🌇';
-    const formatted = `[&lt;${r.song}&gt;, ${r.slotLabel}]`;
-    return `<div class="entry-card ${r.period}-card">
-      <div class="entry-period-icon ${r.period}">${icon}</div>
+  c.innerHTML=filtered.map(r=>`
+    <div class="entry-card">
+      <div class="entry-icon">🎵</div>
       <div class="entry-info">
-        <div class="entry-song">🎵 ${r.song}</div>
-        <div class="entry-meta">${r.date} &nbsp;·&nbsp; ${r.slotLabel}</div>
-        <div class="entry-meta" style="color:var(--accent2); margin-top:3px; font-size:11px;">${formatted}</div>
+        <div class="entry-song">${r.song}</div>
+        <div class="entry-meta">${r.date} · ${r.slotLabel}</div>
+        <div class="entry-formatted">[&lt;${r.song}&gt;, ${r.slotLabel}]</div>
       </div>
-      <div class="entry-tag ${r.period}">${periodLabel}</div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
-// ---- Cancel ----
-let selectedCancelId = null;
-let selectedReason = null;
-
-function renderCancelList() {
-  const date = document.getElementById('cancel-date').value;
-  selectedCancelId = null;
-  selectedReason = null;
-  document.getElementById('cancel-reason-section').style.display = 'none';
-  document.getElementById('cancel-submit-btn').disabled = true;
-  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('reason-custom-wrap').style.display = 'none';
-
-  const dayRes = reservations.filter(r => r.date === date)
-    .sort((a, b) => a.slotLabel.localeCompare(b.slotLabel));
-
-  const container = document.getElementById('cancel-list-container');
-  if (!date) {
-    container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon" style="font-size:32px;">📅</div><p style="font-size:13px;">날짜를 선택하면 신청 목록이 표시돼요</p></div>`;
-    return;
-  }
-  if (dayRes.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon" style="font-size:32px;">📭</div><p style="font-size:13px;">해당 날짜에 신청 내역이 없어요</p></div>`;
-    return;
-  }
-  container.innerHTML = dayRes.map(r => {
-    const icon = r.period === 'am' ? '🌅' : '🌇';
-    const periodLabel = r.period === 'am' ? '오전' : '오후';
-    return `<div class="cancel-entry-card" id="ccard-${r.id}" onclick="selectCancelEntry(${r.id})">
+// Cancel
+let selectedCancelId=null, selectedReason=null;
+function renderCancelList(){
+  const date=document.getElementById('cancel-date').value;
+  selectedCancelId=null; selectedReason=null;
+  document.getElementById('cancel-reason-section').style.display='none';
+  document.getElementById('cancel-submit-btn').disabled=true;
+  document.querySelectorAll('.reason-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('reason-custom-wrap').style.display='none';
+  const dayRes=reservations.filter(r=>r.date===date).sort((a,b)=>a.slotLabel.localeCompare(b.slotLabel));
+  const c=document.getElementById('cancel-list-container');
+  if(!date){c.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📅</div><p>날짜를 선택하면 신청 목록이 표시돼요</p></div>`;return;}
+  if(!dayRes.length){c.innerHTML=`<div class="empty-state" style="padding:30px 0;"><div class="empty-icon">📭</div><p>해당 날짜에 신청 내역이 없어요</p></div>`;return;}
+  c.innerHTML=dayRes.map(r=>`
+    <div class="cancel-entry-card" id="ccard-${r.id}" onclick="selectCancelEntry(${r.id})">
       <div class="cancel-radio"><div class="cancel-radio-dot"></div></div>
       <div class="cancel-entry-info">
-        <div class="cancel-entry-song">${icon} ${r.song}</div>
-        <div class="cancel-entry-meta">${r.date} &nbsp;·&nbsp; ${r.slotLabel} &nbsp;·&nbsp; ${periodLabel}</div>
+        <div class="cancel-entry-song">🎵 ${r.song}</div>
+        <div class="cancel-entry-meta">${r.date} · ${r.slotLabel}</div>
       </div>
-      <div class="entry-tag ${r.period}">${periodLabel}</div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
-
-function selectCancelEntry(id) {
-  selectedCancelId = id;
-  selectedReason = null;
-  document.querySelectorAll('.cancel-entry-card').forEach(c => c.classList.remove('selected'));
+function selectCancelEntry(id){
+  selectedCancelId=id; selectedReason=null;
+  document.querySelectorAll('.cancel-entry-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById(`ccard-${id}`)?.classList.add('selected');
-  document.getElementById('cancel-reason-section').style.display = 'block';
-  document.getElementById('cancel-submit-btn').disabled = true;
-  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('reason-custom-wrap').style.display = 'none';
-  document.getElementById('cancel-reason-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('cancel-reason-section').style.display='block';
+  document.getElementById('cancel-submit-btn').disabled=true;
+  document.querySelectorAll('.reason-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('reason-custom-wrap').style.display='none';
+  document.getElementById('cancel-reason-section').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-
-function selectReason(reason, el) {
-  selectedReason = reason;
-  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+function selectReason(reason,el){
+  selectedReason=reason;
+  document.querySelectorAll('.reason-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
-  const customWrap = document.getElementById('reason-custom-wrap');
-  if (reason === '기타') {
-    customWrap.style.display = 'block';
-    document.getElementById('reason-custom').value = '';
-    document.getElementById('cancel-submit-btn').disabled = true;
-  } else {
-    customWrap.style.display = 'none';
-    checkCancelSubmit();
-  }
+  const w=document.getElementById('reason-custom-wrap');
+  if(reason==='기타'){w.style.display='block';document.getElementById('reason-custom').value='';document.getElementById('cancel-submit-btn').disabled=true;}
+  else{w.style.display='none';checkCancelSubmit();}
 }
-
-function checkCancelSubmit() {
-  if (!selectedCancelId || !selectedReason) { document.getElementById('cancel-submit-btn').disabled = true; return; }
-  if (selectedReason === '기타') {
-    const custom = document.getElementById('reason-custom').value.trim();
-    document.getElementById('cancel-submit-btn').disabled = !custom;
-  } else {
-    document.getElementById('cancel-submit-btn').disabled = false;
-  }
+function checkCancelSubmit(){
+  if(!selectedCancelId||!selectedReason){document.getElementById('cancel-submit-btn').disabled=true;return;}
+  document.getElementById('cancel-submit-btn').disabled=
+    selectedReason==='기타'?!document.getElementById('reason-custom').value.trim():false;
 }
-
-function openCancelConfirmModal() {
-  const entry = reservations.find(r => r.id === selectedCancelId);
-  if (!entry) return;
-  const finalReason = selectedReason === '기타'
-    ? document.getElementById('reason-custom').value.trim()
-    : selectedReason;
-  const periodLabel = entry.period === 'am' ? '오전' : '오후';
-  document.getElementById('cancel-modal-summary').innerHTML =
-    `🎵 곡 이름: ${entry.song}\n⏰ 시간: ${entry.slotLabel} (${periodLabel})\n❓ 취소 사유: ${finalReason}`;
+function openCancelConfirmModal(){
+  const entry=reservations.find(r=>r.id===selectedCancelId);
+  if(!entry) return;
+  const fr=selectedReason==='기타'?document.getElementById('reason-custom').value.trim():selectedReason;
+  document.getElementById('cancel-modal-summary').innerHTML=`🎵  ${entry.song}\n⏰  ${entry.slotLabel}\n❓  ${fr}`;
   document.getElementById('cancel-confirm-modal').classList.add('open');
 }
-function closeCancelModal() {
-  document.getElementById('cancel-confirm-modal').classList.remove('open');
-}
-document.getElementById('cancel-confirm-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeCancelModal();
-});
-
-function executeCancel() {
-  const entry = reservations.find(r => r.id === selectedCancelId);
-  if (!entry) return;
-  const finalReason = selectedReason === '기타'
-    ? document.getElementById('reason-custom').value.trim()
-    : selectedReason;
-  const periodLabel = entry.period === 'am' ? '오전' : '오후';
-
-  reservations = reservations.filter(r => r.id !== selectedCancelId);
-  localStorage.setItem('club_reservations', JSON.stringify(reservations));
-
+function closeCancelModal(){document.getElementById('cancel-confirm-modal').classList.remove('open');}
+document.getElementById('cancel-confirm-modal').addEventListener('click',function(e){if(e.target===this)closeCancelModal();});
+function executeCancel(){
+  const entry=reservations.find(r=>r.id===selectedCancelId);
+  if(!entry) return;
+  const fr=selectedReason==='기타'?document.getElementById('reason-custom').value.trim():selectedReason;
+  reservations=reservations.filter(r=>r.id!==selectedCancelId);
+  localStorage.setItem('club_reservations',JSON.stringify(reservations));
   closeCancelModal();
-  showToast(`🗑️ [<${entry.song}>, ${entry.slotLabel}] 취소 완료 (${finalReason})`, 'error');
-
-  // Reset
-  selectedCancelId = null;
-  selectedReason = null;
-  document.getElementById('cancel-reason-section').style.display = 'none';
-  document.getElementById('cancel-submit-btn').disabled = true;
+  showToast(`✗  [<${entry.song}>, ${entry.slotLabel}]  취소 완료`,'error');
+  selectedCancelId=null; selectedReason=null;
+  document.getElementById('cancel-reason-section').style.display='none';
+  document.getElementById('cancel-submit-btn').disabled=true;
   renderCancelList();
 }
 
-// ---- Toast ----
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type}`;
-  void t.offsetWidth;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3200);
+// Toast
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type}`;
+  void t.offsetWidth; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3400);
 }
 
 init();
