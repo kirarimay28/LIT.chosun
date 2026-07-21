@@ -86,16 +86,17 @@
   }
   .day-type { color:rgba(255,255,255,0.6); font-weight:700; }
   .hours-range { color:rgba(255,255,255,0.35); }
-  .insta-badge {
+  .social-badges { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .social-badge {
     display:inline-flex; align-items:center; gap:6px;
     background:var(--surface); border:1px solid var(--border2);
     padding:7px 16px; border-radius:100px;
     font-size:11px; color:var(--muted2);
     font-family:'Space Mono',monospace;
-    margin-top:12px; text-decoration:none;
+    text-decoration:none;
     transition:all 0.2s;
   }
-  .insta-badge:hover { border-color:rgba(255,255,255,0.28); color:#fff; }
+  .social-badge:hover { border-color:rgba(255,255,255,0.28); color:#fff; }
 
   /* TABS */
   .tabs {
@@ -390,7 +391,10 @@
       <div class="time-badge"><span class="day-type">평일</span><span class="hours-range">06:00 — 22:00</span></div>
       <div class="time-badge"><span class="day-type">주말</span><span class="hours-range">09:00 — 17:00</span></div>
     </div>
-    <a class="insta-badge" href="https://www.instagram.com/lit_chosun?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer">📷 Instagram</a>
+    <div class="social-badges">
+      <a class="social-badge" href="https://www.instagram.com/lit_chosun?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer">📷 Instagram</a>
+      <a class="social-badge" href="https://youtube.com/@lit4596?si=PoBKOYUJbKVx_26g" target="_blank" rel="noopener noreferrer">▶️ YouTube</a>
+    </div>
   </div>
 
   <!-- Tabs -->
