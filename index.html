@@ -252,13 +252,9 @@
 
   /* List */
   .list-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
-  .list-date-filter {
-    background:var(--surface); border:1px solid var(--border2);
-    border-radius:10px; padding:9px 14px; color:var(--text);
-    font-size:12px; font-family:'Space Mono',monospace;
-    outline:none; -webkit-appearance:none; cursor:pointer;
-  }
-  .list-date-filter:focus { border-color:rgba(255,255,255,0.25); }
+  .date-select-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .date-select-row.compact { display:flex; gap:6px; }
+  .date-select-row.compact .time-select { width:auto; padding:9px 26px 9px 12px; font-size:12px; }
   .total-badge {
     background:var(--surface2); border:1px solid var(--border2);
     padding:6px 12px; border-radius:8px;
@@ -422,7 +418,12 @@
       <input type="text" class="form-input" id="song-name" placeholder="연습할 곡 이름을 입력하세요" />
 
       <div class="section-label">날짜 선택</div>
-      <input type="date" class="form-input" id="apply-date" onchange="onDateChange()" />
+      <div class="date-select-row">
+        <select class="time-select" id="apply-year" onchange="onDatePartChange('apply')"></select>
+        <select class="time-select" id="apply-month" onchange="onDatePartChange('apply')"></select>
+        <select class="time-select" id="apply-day" onchange="onDatePartChange('apply')"></select>
+      </div>
+      <input type="hidden" id="apply-date" />
 
       <div class="section-label">사용 시간 선택</div>
       <div class="time-range-row">
@@ -486,8 +487,13 @@
   <div id="panel-list" class="panel">
     <div class="list-header">
       <div></div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="date" class="list-date-filter" id="list-date-filter" onchange="renderList()" />
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="date-select-row compact">
+          <select class="time-select" id="list-year" onchange="onDatePartChange('list')"></select>
+          <select class="time-select" id="list-month" onchange="onDatePartChange('list')"></select>
+          <select class="time-select" id="list-day" onchange="onDatePartChange('list')"></select>
+        </div>
+        <input type="hidden" id="list-date-filter" />
         <div class="total-badge">총 <span id="total-count">0</span>건</div>
       </div>
     </div>
@@ -498,7 +504,12 @@
   <div id="panel-cancel" class="panel">
     <div class="form-card">
       <div class="section-label">날짜 선택</div>
-      <input type="date" class="form-input" id="cancel-date" onchange="renderCancelList()" />
+      <div class="date-select-row">
+        <select class="time-select" id="cancel-year" onchange="onDatePartChange('cancel')"></select>
+        <select class="time-select" id="cancel-month" onchange="onDatePartChange('cancel')"></select>
+        <select class="time-select" id="cancel-day" onchange="onDatePartChange('cancel')"></select>
+      </div>
+      <input type="hidden" id="cancel-date" />
 
       <div class="section-label">취소할 신청 선택</div>
       <div id="cancel-list-container">
@@ -578,6 +589,70 @@ function getHours(dateStr){
   return (day===0||day===6) ? {start:9,end:17} : {start:6,end:22};
 }
 
+// Date pickers (year/month/day dropdowns synced into a hidden input)
+const DATE_PICKERS = {
+  apply:  { hiddenId:'apply-date',        allowEmpty:false },
+  list:   { hiddenId:'list-date-filter',  allowEmpty:true  },
+  cancel: { hiddenId:'cancel-date',       allowEmpty:false }
+};
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+function buildDatePicker(prefix){
+  const {allowEmpty} = DATE_PICKERS[prefix];
+  const ySel=document.getElementById(`${prefix}-year`);
+  const mSel=document.getElementById(`${prefix}-month`);
+  const cy=new Date().getFullYear();
+  let yHtml = allowEmpty?'<option value="">년</option>':'';
+  for(let y=cy-1;y<=cy+2;y++) yHtml+=`<option value="${y}">${y}년</option>`;
+  ySel.innerHTML=yHtml;
+  let mHtml = allowEmpty?'<option value="">월</option>':'';
+  for(let m=1;m<=12;m++) mHtml+=`<option value="${m}">${m}월</option>`;
+  mSel.innerHTML=mHtml;
+  rebuildDayOptions(prefix);
+}
+function rebuildDayOptions(prefix){
+  const {allowEmpty} = DATE_PICKERS[prefix];
+  const ySel=document.getElementById(`${prefix}-year`);
+  const mSel=document.getElementById(`${prefix}-month`);
+  const dSel=document.getElementById(`${prefix}-day`);
+  const prevDay=dSel.value;
+  const y=parseInt(ySel.value), m=parseInt(mSel.value);
+  const dim=(y&&m)?daysInMonth(y,m):31;
+  let dHtml = allowEmpty?'<option value="">일</option>':'';
+  for(let d=1;d<=dim;d++) dHtml+=`<option value="${d}">${d}일</option>`;
+  dSel.innerHTML=dHtml;
+  if(prevDay && parseInt(prevDay)<=dim) dSel.value=prevDay;
+}
+function syncDateHidden(prefix){
+  const {hiddenId}=DATE_PICKERS[prefix];
+  const y=document.getElementById(`${prefix}-year`).value;
+  const m=document.getElementById(`${prefix}-month`).value;
+  const d=document.getElementById(`${prefix}-day`).value;
+  document.getElementById(hiddenId).value=(y&&m&&d)?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+}
+function setDatePickerValue(prefix,dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  document.getElementById(`${prefix}-year`).value=y;
+  document.getElementById(`${prefix}-month`).value=m;
+  rebuildDayOptions(prefix);
+  document.getElementById(`${prefix}-day`).value=d;
+  syncDateHidden(prefix);
+}
+function onDatePartChange(prefix){
+  rebuildDayOptions(prefix);
+  syncDateHidden(prefix);
+  if(prefix==='apply') onDateChange();
+  else if(prefix==='list') renderList();
+  else if(prefix==='cancel') renderCancelList();
+}
+function onDateChange(){
+  const date=document.getElementById('apply-date').value;
+  buildTimeSelects(date);
+  ['start-hour','start-min','end-hour','end-min'].forEach(id=>document.getElementById(id).value='');
+  ['start-min-custom','end-min-custom'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('visible');});
+  document.getElementById('timeline-preview').classList.remove('visible');
+  onTimeChange();
+}
+
 // API
 async function apiGet(){
   try {
@@ -619,8 +694,8 @@ function setLoading(show){
 // Init
 async function init(){
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('apply-date').value = today;
-  document.getElementById('list-date-filter').value = '';
+  ['apply','list','cancel'].forEach(buildDatePicker);
+  setDatePickerValue('apply', today);
   buildTimeSelects(today);
   showToast('📡 데이터 불러오는 중...', 'success');
   await apiGet();
@@ -748,7 +823,7 @@ function switchTab(tab){
   });
   if(tab==='list') apiGet().then(()=>renderList());
   if(tab==='cancel'){
-    document.getElementById('cancel-date').value=new Date().toISOString().split('T')[0];
+    setDatePickerValue('cancel', new Date().toISOString().split('T')[0]);
     apiGet().then(()=>renderCancelList());
   }
 }
