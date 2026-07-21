@@ -86,6 +86,16 @@
   }
   .day-type { color:rgba(255,255,255,0.6); font-weight:700; }
   .hours-range { color:rgba(255,255,255,0.35); }
+  .insta-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border2);
+    padding:7px 16px; border-radius:100px;
+    font-size:11px; color:var(--muted2);
+    font-family:'Space Mono',monospace;
+    margin-top:12px; text-decoration:none;
+    transition:all 0.2s;
+  }
+  .insta-badge:hover { border-color:rgba(255,255,255,0.28); color:#fff; }
 
   /* TABS */
   .tabs {
@@ -380,6 +390,7 @@
       <div class="time-badge"><span class="day-type">평일</span><span class="hours-range">06:00 — 22:00</span></div>
       <div class="time-badge"><span class="day-type">주말</span><span class="hours-range">09:00 — 17:00</span></div>
     </div>
+    <a class="insta-badge" href="https://www.instagram.com/lit_chosun?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noopener noreferrer">📷 Instagram</a>
   </div>
 
   <!-- Tabs -->
@@ -558,9 +569,18 @@ async function apiGet(){
     const res = await fetch(API_URL + '?action=getAll');
     const data = await res.json();
     reservations = data.map(r => ({...r, id: Number(r.id)}));
+    await purgeExpiredReservations();
   } catch(e) {
     showToast('⚠️ 데이터 불러오기 실패', 'error');
   }
+}
+// 날짜가 지난 예약은 서버/화면에서 자동으로 제거
+async function purgeExpiredReservations(){
+  const today = new Date().toISOString().split('T')[0];
+  const expired = reservations.filter(r => normalizeDate(r.date) < today);
+  if(!expired.length) return;
+  reservations = reservations.filter(r => normalizeDate(r.date) >= today);
+  await Promise.allSettled(expired.map(r => apiDelete(r.id)));
 }
 async function apiAdd(entry){
   await fetch(API_URL, {
