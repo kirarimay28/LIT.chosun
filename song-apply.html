@@ -145,8 +145,19 @@
   .entry-info { flex:1; min-width:0; }
   .entry-song { font-size:14px; font-weight:700; color:rgba(255,255,255,0.88); margin-bottom:4px; }
   .entry-meta { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted2); }
-  .entry-formatted { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.25); margin-top:3px; }
+  .entry-formatted { font-family:'Space Mono',monospace; font-size:10px; margin-top:4px; }
+  .entry-formatted a { color:rgba(255,255,255,0.4); text-decoration:underline; word-break:break-all; }
+  .entry-formatted a:hover { color:#fff; }
   .empty-state { text-align:center; padding:24px 0; color:var(--muted2); font-size:13px; }
+  .entry-actions { display:flex; gap:6px; flex-shrink:0; }
+  .entry-action-btn {
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:8px; padding:8px 12px; font-size:11px;
+    color:var(--muted2); font-family:'Space Mono',monospace;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .entry-action-btn:hover { border-color:rgba(255,255,255,0.25); color:#fff; }
+  .entry-action-btn.danger:hover { border-color:rgba(255,107,107,0.4); color:var(--danger); }
 
   .roster-btn {
     background:var(--surface2); border:1px solid var(--border2);
@@ -282,6 +293,7 @@
       <input type="text" class="form-input" id="song-link" placeholder="원곡/안무 영상 링크" oninput="checkSongSubmit()" />
 
       <button class="submit-btn" id="song-submit-btn" onclick="submitSong()" disabled>곡 신청하기</button>
+      <button class="submit-btn" id="song-cancel-edit-btn" style="display:none;background:linear-gradient(160deg,#1f1212,#181010);border-color:rgba(255,107,107,0.18);" onclick="cancelSongEdit()">수정 취소</button>
     </div>
 
     <div class="section-label" style="margin-top:26px;">신청 현황</div>
@@ -356,6 +368,7 @@
       <textarea class="form-input" id="choreo-condition" placeholder="예) 주말에 연습을 진행할 예정이라 주말연습을 나오실 수 있는 분이면 좋겠습니다 !!" oninput="checkChoreoSubmit()"></textarea>
 
       <button class="submit-btn" id="choreo-submit-btn" onclick="submitChoreo()" disabled>안무팀장 신청하기</button>
+      <button class="submit-btn" id="choreo-cancel-edit-btn" style="display:none;background:linear-gradient(160deg,#1f1212,#181010);border-color:rgba(255,107,107,0.18);" onclick="cancelChoreoEdit()">수정 취소</button>
     </div>
 
     <div class="section-label" style="margin-top:26px;">신청 현황</div>
@@ -440,21 +453,24 @@ function checkChoreoSubmit(){
   document.getElementById('choreo-submit-btn').disabled = !(applicant && name && members && duration && link && condition);
 }
 
+let editingSongId = null;
+let editingChoreoId = null;
+
 async function loadSongList(){
   try {
     const res = await fetch(`${PERF_API_URL}?action=getSongs&perfId=${PERF_ID}`);
     songList = await res.json();
   } catch(e) { songList = []; }
-  renderStatusList('song', songList, s=>`인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}`, s=>escapeHtml(String(s.link)));
+  renderStatusList('song', songList, s=>`신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}`, null);
 }
 async function loadChoreoList(){
   try {
     const res = await fetch(`${PERF_API_URL}?action=getChoreo&perfId=${PERF_ID}`);
     choreoList = await res.json();
   } catch(e) { choreoList = []; }
-  renderStatusList('choreo', choreoList, s=>`인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}`, s=>`${escapeHtml(String(s.link))} · ${escapeHtml(String(s.condition))}`);
+  renderStatusList('choreo', choreoList, s=>`신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}`, s=>escapeHtml(String(s.condition)));
 }
-function renderStatusList(prefix, list, metaFn, detailFn){
+function renderStatusList(prefix, list, metaFn, extraFn){
   const c=document.getElementById(`${prefix}-status-list`);
   if(!list.length){
     c.innerHTML=`<div class="empty-state">아직 신청된 항목이 없어요</div>`;
@@ -465,11 +481,102 @@ function renderStatusList(prefix, list, metaFn, detailFn){
     <div class="entry-card">
       <div class="entry-icon">${icon}</div>
       <div class="entry-info">
-        <div class="entry-song">${escapeHtml(s.name)}</div>
+        <div class="entry-song">${escapeHtml(s.name)} (${escapeHtml(String(s.members))}명)</div>
         <div class="entry-meta">${metaFn(s)}</div>
-        <div class="entry-formatted">${detailFn(s)}</div>
+        ${extraFn ? `<div class="entry-meta">${extraFn(s)}</div>` : ''}
+        <div class="entry-formatted"><a href="${escapeHtml(String(s.link))}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(s.link))}</a></div>
+      </div>
+      <div class="entry-actions">
+        <button class="entry-action-btn" onclick="${prefix==='song'?'startEditSong':'startEditChoreo'}(${s.id})">수정</button>
+        <button class="entry-action-btn danger" onclick="${prefix==='song'?'deleteSongEntry':'deleteChoreoEntry'}(${s.id})">삭제</button>
       </div>
     </div>`).join('');
+}
+
+function parseDurationPoint(label){
+  if(label==='처음부터') return {min:'beginning', sec:''};
+  if(label==='끝까지') return {min:'end', sec:''};
+  const m = String(label).match(/(\d+)분\s*(\d+)초/);
+  if(!m) return {min:'', sec:''};
+  return {min:m[1], sec:m[2]};
+}
+function parseDurationRange(range){
+  const [startLabel, endLabel] = String(range).split(' ~ ');
+  return { start: parseDurationPoint(startLabel||''), end: parseDurationPoint(endLabel||'') };
+}
+function applyDurationToForm(prefix, range){
+  const {start, end} = parseDurationRange(range);
+  document.getElementById(`${prefix}-start-min`).value = start.min;
+  document.getElementById(`${prefix}-start-sec`).disabled = start.min==='beginning';
+  document.getElementById(`${prefix}-start-sec`).value = start.sec;
+  document.getElementById(`${prefix}-end-min`).value = end.min;
+  document.getElementById(`${prefix}-end-sec`).disabled = end.min==='end';
+  document.getElementById(`${prefix}-end-sec`).value = end.sec;
+}
+
+function startEditSong(id){
+  const s=songList.find(x=>String(x.id)===String(id));
+  if(!s) return;
+  editingSongId=s.id;
+  document.getElementById('song-applicant').value=s.applicantName;
+  document.getElementById('song-name').value=s.name;
+  document.getElementById('song-members').value=s.members;
+  applyDurationToForm('song', s.duration);
+  document.getElementById('song-link').value=s.link;
+  document.getElementById('song-submit-btn').textContent='수정 완료';
+  document.getElementById('song-cancel-edit-btn').style.display='block';
+  checkSongSubmit();
+  document.getElementById('panel-song').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cancelSongEdit(){
+  editingSongId=null;
+  ['song-applicant','song-name','song-members','song-link'].forEach(id=>document.getElementById(id).value='');
+  ['song-start-min','song-start-sec','song-end-min','song-end-sec'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('song-start-sec').disabled=false;
+  document.getElementById('song-end-sec').disabled=false;
+  document.getElementById('song-submit-btn').textContent='곡 신청하기';
+  document.getElementById('song-cancel-edit-btn').style.display='none';
+  checkSongSubmit();
+}
+async function deleteSongEntry(id){
+  if(!confirm('이 곡 신청을 삭제할까요?')) return;
+  await fetch(PERF_API_URL, { method:'POST', body: JSON.stringify({action:'deleteSong', id}) });
+  if(editingSongId===id) cancelSongEdit();
+  await loadSongList();
+  showToast('✗ 곡 신청 삭제 완료','error');
+}
+
+function startEditChoreo(id){
+  const s=choreoList.find(x=>String(x.id)===String(id));
+  if(!s) return;
+  editingChoreoId=s.id;
+  document.getElementById('choreo-applicant').value=s.applicantName;
+  document.getElementById('choreo-name').value=s.name;
+  document.getElementById('choreo-members').value=s.members;
+  applyDurationToForm('choreo', s.duration);
+  document.getElementById('choreo-link').value=s.link;
+  document.getElementById('choreo-condition').value=s.condition;
+  document.getElementById('choreo-submit-btn').textContent='수정 완료';
+  document.getElementById('choreo-cancel-edit-btn').style.display='block';
+  checkChoreoSubmit();
+  document.getElementById('panel-choreo').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cancelChoreoEdit(){
+  editingChoreoId=null;
+  ['choreo-applicant','choreo-name','choreo-members','choreo-link','choreo-condition'].forEach(id=>document.getElementById(id).value='');
+  ['choreo-start-min','choreo-start-sec','choreo-end-min','choreo-end-sec'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('choreo-start-sec').disabled=false;
+  document.getElementById('choreo-end-sec').disabled=false;
+  document.getElementById('choreo-submit-btn').textContent='안무팀장 신청하기';
+  document.getElementById('choreo-cancel-edit-btn').style.display='none';
+  checkChoreoSubmit();
+}
+async function deleteChoreoEntry(id){
+  if(!confirm('이 안무팀장 신청을 삭제할까요?')) return;
+  await fetch(PERF_API_URL, { method:'POST', body: JSON.stringify({action:'deleteChoreo', id}) });
+  if(editingChoreoId===id) cancelChoreoEdit();
+  await loadChoreoList();
+  showToast('✗ 안무팀장 신청 삭제 완료','error');
 }
 
 async function copyRoster(prefix){
@@ -498,22 +605,28 @@ async function submitSong(){
   const duration=getDurationRange('song');
   const link=document.getElementById('song-link').value.trim();
   const btn=document.getElementById('song-submit-btn');
-  btn.disabled=true; btn.textContent='신청 중...';
+  const isEdit=editingSongId!==null;
+  btn.disabled=true; btn.textContent=isEdit?'수정 중...':'신청 중...';
   try {
-    await fetch(PERF_API_URL, {
-      method:'POST',
-      body: JSON.stringify({action:'addSong', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
-    });
-    showToast('✓ 곡 신청 완료','success');
-    ['song-applicant','song-name','song-members','song-link'].forEach(id=>document.getElementById(id).value='');
-    ['song-start-min','song-start-sec','song-end-min','song-end-sec'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('song-start-sec').disabled=false;
-    document.getElementById('song-end-sec').disabled=false;
+    if(isEdit){
+      await fetch(PERF_API_URL, {
+        method:'POST',
+        body: JSON.stringify({action:'updateSong', id:editingSongId, applicantName, name, members, duration, link})
+      });
+    } else {
+      await fetch(PERF_API_URL, {
+        method:'POST',
+        body: JSON.stringify({action:'addSong', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
+      });
+    }
+    showToast(isEdit?'✓ 곡 신청 수정 완료':'✓ 곡 신청 완료','success');
+    cancelSongEdit();
     await loadSongList();
+    return;
   } catch(e) {
-    showToast('⚠️ 신청 실패, 다시 시도해주세요','error');
+    showToast('⚠️ 처리 실패, 다시 시도해주세요','error');
   }
-  btn.textContent='곡 신청하기';
+  btn.textContent = isEdit ? '수정 완료' : '곡 신청하기';
   checkSongSubmit();
 }
 async function submitChoreo(){
@@ -524,22 +637,28 @@ async function submitChoreo(){
   const link=document.getElementById('choreo-link').value.trim();
   const condition=document.getElementById('choreo-condition').value.trim();
   const btn=document.getElementById('choreo-submit-btn');
-  btn.disabled=true; btn.textContent='신청 중...';
+  const isEdit=editingChoreoId!==null;
+  btn.disabled=true; btn.textContent=isEdit?'수정 중...':'신청 중...';
   try {
-    await fetch(PERF_API_URL, {
-      method:'POST',
-      body: JSON.stringify({action:'addChoreo', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
-    });
-    showToast('✓ 안무팀장 신청 완료','success');
-    ['choreo-applicant','choreo-name','choreo-members','choreo-link','choreo-condition'].forEach(id=>document.getElementById(id).value='');
-    ['choreo-start-min','choreo-start-sec','choreo-end-min','choreo-end-sec'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('choreo-start-sec').disabled=false;
-    document.getElementById('choreo-end-sec').disabled=false;
+    if(isEdit){
+      await fetch(PERF_API_URL, {
+        method:'POST',
+        body: JSON.stringify({action:'updateChoreo', id:editingChoreoId, applicantName, name, members, duration, link, condition})
+      });
+    } else {
+      await fetch(PERF_API_URL, {
+        method:'POST',
+        body: JSON.stringify({action:'addChoreo', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
+      });
+    }
+    showToast(isEdit?'✓ 안무팀장 신청 수정 완료':'✓ 안무팀장 신청 완료','success');
+    cancelChoreoEdit();
     await loadChoreoList();
+    return;
   } catch(e) {
-    showToast('⚠️ 신청 실패, 다시 시도해주세요','error');
+    showToast('⚠️ 처리 실패, 다시 시도해주세요','error');
   }
-  btn.textContent='안무팀장 신청하기';
+  btn.textContent = isEdit ? '수정 완료' : '안무팀장 신청하기';
   checkChoreoSubmit();
 }
 
