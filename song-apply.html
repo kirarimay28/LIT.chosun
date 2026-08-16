@@ -93,6 +93,9 @@
   .form-input::placeholder { color:var(--muted); }
   textarea.form-input { resize:vertical; min-height:80px; font-family:'Noto Sans KR',sans-serif; }
 
+  .duration-label { font-size:10px; color:var(--muted2); font-family:'Space Mono',monospace; letter-spacing:1px; margin-bottom:6px; }
+  .duration-group { margin-top:12px; }
+  .duration-group:first-child { margin-top:0; }
   .duration-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .time-select {
     width:100%; background:var(--surface2);
@@ -106,6 +109,7 @@
     background-repeat:no-repeat; background-position:right 10px center;
   }
   .time-select:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
+  .time-select:disabled { opacity:0.3; cursor:not-allowed; }
   .time-select option { background:#181818; }
   .field-hint { font-size:11px; color:var(--muted2); font-family:'Space Mono',monospace; margin-top:8px; }
 
@@ -125,6 +129,40 @@
     transform:translateY(-1px);
   }
   .submit-btn:disabled { opacity:0.25; cursor:not-allowed; transform:none; }
+
+  .entry-card {
+    background:var(--surface); border:1px solid var(--border2);
+    border-left:2px solid rgba(255,255,255,0.18);
+    border-radius:16px; padding:16px 18px; margin-bottom:8px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .entry-icon {
+    width:36px; height:36px; border-radius:10px;
+    background:var(--surface2); border:1px solid var(--border2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px; flex-shrink:0;
+  }
+  .entry-info { flex:1; min-width:0; }
+  .entry-song { font-size:14px; font-weight:700; color:rgba(255,255,255,0.88); margin-bottom:4px; }
+  .entry-meta { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted2); }
+  .entry-formatted { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.25); margin-top:3px; }
+  .empty-state { text-align:center; padding:24px 0; color:var(--muted2); font-size:13px; }
+
+  .roster-btn {
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:10px; padding:10px 16px; font-size:12px;
+    color:var(--muted2); font-family:'Space Mono',monospace;
+    cursor:pointer; transition:all 0.2s; margin-top:10px;
+  }
+  .roster-btn:hover { border-color:rgba(255,255,255,0.25); color:#fff; }
+  .roster-text {
+    width:100%; margin-top:10px; display:none;
+    background:var(--surface2); border:1px solid var(--border2); border-radius:12px;
+    padding:14px 16px; color:var(--text);
+    font-size:12px; font-family:'Space Mono',monospace; line-height:1.8;
+    resize:vertical; min-height:100px;
+  }
+  .roster-text.visible { display:block; }
 
   .toast {
     position:fixed; bottom:32px; left:50%;
@@ -184,30 +222,59 @@
   <!-- Song Application Panel -->
   <div id="panel-song" class="panel active">
     <div class="form-card">
+      <div class="section-label">신청자 이름</div>
+      <input type="text" class="form-input" id="song-applicant" placeholder="신청자 이름을 입력하세요" oninput="checkSongSubmit()" />
+
       <div class="section-label">곡 명</div>
       <input type="text" class="form-input" id="song-name" placeholder="신청할 곡 이름을 입력하세요" oninput="checkSongSubmit()" />
 
       <div class="section-label">인원</div>
       <input type="number" class="form-input" id="song-members" min="1" placeholder="예) 5" oninput="checkSongSubmit()" />
 
-      <div class="section-label">분량</div>
-      <div class="duration-row">
-        <select class="time-select" id="song-dur-min" onchange="checkSongSubmit()">
-          <option value="">분</option>
-          <option value="0">0분</option>
-          <option value="1">1분</option>
-          <option value="2">2분</option>
-          <option value="3">3분</option>
-        </select>
-        <select class="time-select" id="song-dur-sec" onchange="checkSongSubmit()">
-          <option value="">초</option>
-          <option value="0">00초</option>
-          <option value="10">10초</option>
-          <option value="20">20초</option>
-          <option value="30">30초</option>
-          <option value="40">40초</option>
-          <option value="50">50초</option>
-        </select>
+      <div class="section-label">분량 (구간)</div>
+      <div class="duration-group">
+        <div class="duration-label">시작</div>
+        <div class="duration-row">
+          <select class="time-select" id="song-start-min" onchange="onDurPointChange('song-start')">
+            <option value="">분</option>
+            <option value="beginning">처음부터</option>
+            <option value="0">0분</option>
+            <option value="1">1분</option>
+            <option value="2">2분</option>
+            <option value="3">3분</option>
+          </select>
+          <select class="time-select" id="song-start-sec" onchange="checkSongSubmit()">
+            <option value="">초</option>
+            <option value="0">00초</option>
+            <option value="10">10초</option>
+            <option value="20">20초</option>
+            <option value="30">30초</option>
+            <option value="40">40초</option>
+            <option value="50">50초</option>
+          </select>
+        </div>
+      </div>
+      <div class="duration-group">
+        <div class="duration-label">종료</div>
+        <div class="duration-row">
+          <select class="time-select" id="song-end-min" onchange="onDurPointChange('song-end')">
+            <option value="">분</option>
+            <option value="0">0분</option>
+            <option value="1">1분</option>
+            <option value="2">2분</option>
+            <option value="3">3분</option>
+            <option value="end">끝까지</option>
+          </select>
+          <select class="time-select" id="song-end-sec" onchange="checkSongSubmit()">
+            <option value="">초</option>
+            <option value="0">00초</option>
+            <option value="10">10초</option>
+            <option value="20">20초</option>
+            <option value="30">30초</option>
+            <option value="40">40초</option>
+            <option value="50">50초</option>
+          </select>
+        </div>
       </div>
       <div class="field-hint">※ 2분 20초 이내로 신청해주세요</div>
 
@@ -216,35 +283,69 @@
 
       <button class="submit-btn" id="song-submit-btn" onclick="submitSong()" disabled>곡 신청하기</button>
     </div>
+
+    <div class="section-label" style="margin-top:26px;">신청 현황</div>
+    <div id="song-status-list"></div>
+    <button class="roster-btn" onclick="copyRoster('song')">📋 정리하기 (복사)</button>
+    <textarea class="roster-text" id="song-roster-text" readonly></textarea>
   </div>
 
   <!-- Choreo Leader Application Panel -->
   <div id="panel-choreo" class="panel">
     <div class="form-card">
+      <div class="section-label">신청자 이름</div>
+      <input type="text" class="form-input" id="choreo-applicant" placeholder="신청자 이름을 입력하세요" oninput="checkChoreoSubmit()" />
+
       <div class="section-label">곡 명</div>
       <input type="text" class="form-input" id="choreo-name" placeholder="팀장을 맡을 곡 이름을 입력하세요" oninput="checkChoreoSubmit()" />
 
       <div class="section-label">인원</div>
       <input type="number" class="form-input" id="choreo-members" min="1" placeholder="예) 5" oninput="checkChoreoSubmit()" />
 
-      <div class="section-label">분량</div>
-      <div class="duration-row">
-        <select class="time-select" id="choreo-dur-min" onchange="checkChoreoSubmit()">
-          <option value="">분</option>
-          <option value="0">0분</option>
-          <option value="1">1분</option>
-          <option value="2">2분</option>
-          <option value="3">3분</option>
-        </select>
-        <select class="time-select" id="choreo-dur-sec" onchange="checkChoreoSubmit()">
-          <option value="">초</option>
-          <option value="0">00초</option>
-          <option value="10">10초</option>
-          <option value="20">20초</option>
-          <option value="30">30초</option>
-          <option value="40">40초</option>
-          <option value="50">50초</option>
-        </select>
+      <div class="section-label">분량 (구간)</div>
+      <div class="duration-group">
+        <div class="duration-label">시작</div>
+        <div class="duration-row">
+          <select class="time-select" id="choreo-start-min" onchange="onDurPointChange('choreo-start')">
+            <option value="">분</option>
+            <option value="beginning">처음부터</option>
+            <option value="0">0분</option>
+            <option value="1">1분</option>
+            <option value="2">2분</option>
+            <option value="3">3분</option>
+          </select>
+          <select class="time-select" id="choreo-start-sec" onchange="checkChoreoSubmit()">
+            <option value="">초</option>
+            <option value="0">00초</option>
+            <option value="10">10초</option>
+            <option value="20">20초</option>
+            <option value="30">30초</option>
+            <option value="40">40초</option>
+            <option value="50">50초</option>
+          </select>
+        </div>
+      </div>
+      <div class="duration-group">
+        <div class="duration-label">종료</div>
+        <div class="duration-row">
+          <select class="time-select" id="choreo-end-min" onchange="onDurPointChange('choreo-end')">
+            <option value="">분</option>
+            <option value="0">0분</option>
+            <option value="1">1분</option>
+            <option value="2">2분</option>
+            <option value="3">3분</option>
+            <option value="end">끝까지</option>
+          </select>
+          <select class="time-select" id="choreo-end-sec" onchange="checkChoreoSubmit()">
+            <option value="">초</option>
+            <option value="0">00초</option>
+            <option value="10">10초</option>
+            <option value="20">20초</option>
+            <option value="30">30초</option>
+            <option value="40">40초</option>
+            <option value="50">50초</option>
+          </select>
+        </div>
       </div>
       <div class="field-hint">※ 2분 20초 이내로 신청해주세요</div>
 
@@ -256,6 +357,11 @@
 
       <button class="submit-btn" id="choreo-submit-btn" onclick="submitChoreo()" disabled>안무팀장 신청하기</button>
     </div>
+
+    <div class="section-label" style="margin-top:26px;">신청 현황</div>
+    <div id="choreo-status-list"></div>
+    <button class="roster-btn" onclick="copyRoster('choreo')">📋 정리하기 (복사)</button>
+    <textarea class="roster-text" id="choreo-roster-text" readonly></textarea>
   </div>
 </div>
 
@@ -268,14 +374,23 @@ const params = new URLSearchParams(window.location.search);
 const PERF_ID = params.get('perfId');
 const PERF_NAME = params.get('perfName') || '';
 
-(function initPerfContext(){
+let songList = [];
+let choreoList = [];
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+async function initPerfContext(){
   if(!PERF_ID){
     document.getElementById('missing-perf-notice').style.display='block';
     document.querySelectorAll('.tabs, .panel').forEach(el=>el.style.display='none');
     return;
   }
   document.getElementById('perf-context').textContent = `📅 ${PERF_NAME || '선택된 공연'} 신청`;
-})();
+  await Promise.all([loadSongList(), loadChoreoList()]);
+}
+initPerfContext();
 
 function switchTab(tab){
   ['song','choreo'].forEach((t,i)=>{
@@ -284,41 +399,117 @@ function switchTab(tab){
   });
 }
 
-function fmtDuration(min,sec){ return `${min}분 ${String(sec).padStart(2,'0')}초`; }
+// duration point (시작/종료) helpers
+function onDurPointChange(prefix){
+  const minSel=document.getElementById(`${prefix}-min`);
+  const secSel=document.getElementById(`${prefix}-sec`);
+  const special = minSel.value==='beginning' || minSel.value==='end';
+  secSel.disabled = special;
+  if(special) secSel.value='';
+  if(prefix.startsWith('song')) checkSongSubmit(); else checkChoreoSubmit();
+}
+function getDurationRange(prefix){
+  const startMin=document.getElementById(`${prefix}-start-min`).value;
+  const startSec=document.getElementById(`${prefix}-start-sec`).value;
+  const endMin=document.getElementById(`${prefix}-end-min`).value;
+  const endSec=document.getElementById(`${prefix}-end-sec`).value;
+  if(startMin==='') return null;
+  if(startMin!=='beginning' && startSec==='') return null;
+  if(endMin==='') return null;
+  if(endMin!=='end' && endSec==='') return null;
+  const startLabel = startMin==='beginning' ? '처음부터' : `${startMin}분 ${String(startSec).padStart(2,'0')}초`;
+  const endLabel = endMin==='end' ? '끝까지' : `${endMin}분 ${String(endSec).padStart(2,'0')}초`;
+  return `${startLabel} ~ ${endLabel}`;
+}
 
 function checkSongSubmit(){
+  const applicant=document.getElementById('song-applicant').value.trim();
   const name=document.getElementById('song-name').value.trim();
   const members=document.getElementById('song-members').value;
-  const min=document.getElementById('song-dur-min').value;
-  const sec=document.getElementById('song-dur-sec').value;
+  const duration=getDurationRange('song');
   const link=document.getElementById('song-link').value.trim();
-  document.getElementById('song-submit-btn').disabled = !(name && members && min!=='' && sec!=='' && link);
+  document.getElementById('song-submit-btn').disabled = !(applicant && name && members && duration && link);
 }
 function checkChoreoSubmit(){
+  const applicant=document.getElementById('choreo-applicant').value.trim();
   const name=document.getElementById('choreo-name').value.trim();
   const members=document.getElementById('choreo-members').value;
-  const min=document.getElementById('choreo-dur-min').value;
-  const sec=document.getElementById('choreo-dur-sec').value;
+  const duration=getDurationRange('choreo');
   const link=document.getElementById('choreo-link').value.trim();
   const condition=document.getElementById('choreo-condition').value.trim();
-  document.getElementById('choreo-submit-btn').disabled = !(name && members && min!=='' && sec!=='' && link && condition);
+  document.getElementById('choreo-submit-btn').disabled = !(applicant && name && members && duration && link && condition);
+}
+
+async function loadSongList(){
+  try {
+    const res = await fetch(`${PERF_API_URL}?action=getSongs&perfId=${PERF_ID}`);
+    songList = await res.json();
+  } catch(e) { songList = []; }
+  renderStatusList('song', songList, s=>`인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}`, s=>escapeHtml(String(s.link)));
+}
+async function loadChoreoList(){
+  try {
+    const res = await fetch(`${PERF_API_URL}?action=getChoreo&perfId=${PERF_ID}`);
+    choreoList = await res.json();
+  } catch(e) { choreoList = []; }
+  renderStatusList('choreo', choreoList, s=>`인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}`, s=>`${escapeHtml(String(s.link))} · ${escapeHtml(String(s.condition))}`);
+}
+function renderStatusList(prefix, list, metaFn, detailFn){
+  const c=document.getElementById(`${prefix}-status-list`);
+  if(!list.length){
+    c.innerHTML=`<div class="empty-state">아직 신청된 항목이 없어요</div>`;
+    return;
+  }
+  const icon = prefix==='song' ? '🎶' : '💃';
+  c.innerHTML=list.map(s=>`
+    <div class="entry-card">
+      <div class="entry-icon">${icon}</div>
+      <div class="entry-info">
+        <div class="entry-song">${escapeHtml(s.name)}</div>
+        <div class="entry-meta">${metaFn(s)}</div>
+        <div class="entry-formatted">${detailFn(s)}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function copyRoster(prefix){
+  const list = prefix==='song' ? songList : choreoList;
+  const box = document.getElementById(`${prefix}-roster-text`);
+  if(!list.length){
+    showToast('정리할 신청 내역이 없어요','error');
+    return;
+  }
+  const text = list.map(s=>`[${s.name}/${s.members}]`).join('\n');
+  box.value = text;
+  box.classList.add('visible');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ 복사 완료','success');
+  } catch(e) {
+    box.focus(); box.select();
+    showToast('아래 내용을 직접 선택해서 복사해주세요','error');
+  }
 }
 
 async function submitSong(){
+  const applicantName=document.getElementById('song-applicant').value.trim();
   const name=document.getElementById('song-name').value.trim();
   const members=document.getElementById('song-members').value;
-  const duration=fmtDuration(document.getElementById('song-dur-min').value, document.getElementById('song-dur-sec').value);
+  const duration=getDurationRange('song');
   const link=document.getElementById('song-link').value.trim();
   const btn=document.getElementById('song-submit-btn');
   btn.disabled=true; btn.textContent='신청 중...';
   try {
     await fetch(PERF_API_URL, {
       method:'POST',
-      body: JSON.stringify({action:'addSong', id:Date.now(), perfId:PERF_ID, name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
+      body: JSON.stringify({action:'addSong', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
     });
     showToast('✓ 곡 신청 완료','success');
-    ['song-name','song-members','song-link'].forEach(id=>document.getElementById(id).value='');
-    ['song-dur-min','song-dur-sec'].forEach(id=>document.getElementById(id).value='');
+    ['song-applicant','song-name','song-members','song-link'].forEach(id=>document.getElementById(id).value='');
+    ['song-start-min','song-start-sec','song-end-min','song-end-sec'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('song-start-sec').disabled=false;
+    document.getElementById('song-end-sec').disabled=false;
+    await loadSongList();
   } catch(e) {
     showToast('⚠️ 신청 실패, 다시 시도해주세요','error');
   }
@@ -326,9 +517,10 @@ async function submitSong(){
   checkSongSubmit();
 }
 async function submitChoreo(){
+  const applicantName=document.getElementById('choreo-applicant').value.trim();
   const name=document.getElementById('choreo-name').value.trim();
   const members=document.getElementById('choreo-members').value;
-  const duration=fmtDuration(document.getElementById('choreo-dur-min').value, document.getElementById('choreo-dur-sec').value);
+  const duration=getDurationRange('choreo');
   const link=document.getElementById('choreo-link').value.trim();
   const condition=document.getElementById('choreo-condition').value.trim();
   const btn=document.getElementById('choreo-submit-btn');
@@ -336,11 +528,14 @@ async function submitChoreo(){
   try {
     await fetch(PERF_API_URL, {
       method:'POST',
-      body: JSON.stringify({action:'addChoreo', id:Date.now(), perfId:PERF_ID, name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
+      body: JSON.stringify({action:'addChoreo', id:Date.now(), perfId:PERF_ID, applicantName, name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
     });
     showToast('✓ 안무팀장 신청 완료','success');
-    ['choreo-name','choreo-members','choreo-link','choreo-condition'].forEach(id=>document.getElementById(id).value='');
-    ['choreo-dur-min','choreo-dur-sec'].forEach(id=>document.getElementById(id).value='');
+    ['choreo-applicant','choreo-name','choreo-members','choreo-link','choreo-condition'].forEach(id=>document.getElementById(id).value='');
+    ['choreo-start-min','choreo-start-sec','choreo-end-min','choreo-end-sec'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('choreo-start-sec').disabled=false;
+    document.getElementById('choreo-end-sec').disabled=false;
+    await loadChoreoList();
   } catch(e) {
     showToast('⚠️ 신청 실패, 다시 시도해주세요','error');
   }

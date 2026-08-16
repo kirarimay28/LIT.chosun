@@ -187,6 +187,7 @@
   .min-custom-input.visible { display:block; }
   .min-custom-input:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
   .min-custom-input::placeholder { color:var(--muted); }
+  .roster-copy-text { min-height:100px; resize:vertical; line-height:1.8; margin-bottom:14px; }
 
   .hours-notice {
     display:none; background:rgba(255,107,107,0.07);
@@ -1253,17 +1254,34 @@ async function toggleSongRoster(perfId){
     fetch(`${PERF_API_URL}?action=getSongs&perfId=${perfId}`).then(r=>r.json()),
     fetch(`${PERF_API_URL}?action=getChoreo&perfId=${perfId}`).then(r=>r.json())
   ]);
-  container.innerHTML = renderRosterHtml(songs, choreo);
+  state.songs=songs; state.choreo=choreo;
+  container.innerHTML = renderRosterHtml(perfId, songs, choreo);
   container.style.display='block';
   state.open=true;
 }
-function renderRosterHtml(songs, choreo){
+async function copyPerfRoster(perfId, kind){
+  const state=perfRosterState[perfId];
+  const list = state ? (kind==='song'?state.songs:state.choreo) : [];
+  const box=document.getElementById(`roster-text-${kind}-${perfId}`);
+  if(!list || !list.length){ showToast('정리할 신청 내역이 없어요','error'); return; }
+  const text=list.map(s=>`[${s.name}/${s.members}]`).join('\n');
+  box.value=text;
+  box.classList.add('visible');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ 복사 완료','success');
+  } catch(e) {
+    box.focus(); box.select();
+    showToast('아래 내용을 직접 선택해서 복사해주세요','error');
+  }
+}
+function renderRosterHtml(perfId, songs, choreo){
   const songsHtml = songs.length ? songs.map(s=>`
     <div class="entry-card">
       <div class="entry-icon">🎶</div>
       <div class="entry-info">
         <div class="entry-song">${escapeHtml(s.name)}</div>
-        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))}</div>
+        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}</div>
         <div class="entry-formatted">${escapeHtml(String(s.link))}</div>
       </div>
     </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 곡이 없어요</p></div>`;
@@ -1272,15 +1290,19 @@ function renderRosterHtml(songs, choreo){
       <div class="entry-icon">💃</div>
       <div class="entry-info">
         <div class="entry-song">${escapeHtml(s.name)}</div>
-        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))}</div>
+        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}</div>
         <div class="entry-formatted">${escapeHtml(String(s.link))} · ${escapeHtml(String(s.condition))}</div>
       </div>
     </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 안무팀장이 없어요</p></div>`;
   return `
     <div class="section-label" style="margin-top:0;">신청된 곡</div>
     ${songsHtml}
+    <button class="perf-action-btn" onclick="copyPerfRoster(${perfId},'song')">📋 정리하기 (복사)</button>
+    <textarea class="min-custom-input roster-copy-text" id="roster-text-song-${perfId}" readonly></textarea>
     <div class="section-label">안무팀장 신청</div>
     ${choreoHtml}
+    <button class="perf-action-btn" onclick="copyPerfRoster(${perfId},'choreo')">📋 정리하기 (복사)</button>
+    <textarea class="min-custom-input roster-copy-text" id="roster-text-choreo-${perfId}" readonly></textarea>
   `;
 }
 
