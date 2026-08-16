@@ -174,6 +174,8 @@
     resize:vertical; min-height:100px;
   }
   .roster-text.visible { display:block; }
+  .roster-action-row { display:none; gap:6px; margin-top:10px; }
+  .roster-action-row.visible { display:flex; }
 
   .toast {
     position:fixed; bottom:32px; left:50%;
@@ -207,6 +209,10 @@
 
   <div class="notice-card" id="missing-perf-notice" style="display:none;border-color:rgba(255,107,107,0.28);">
     <p style="color:var(--danger);font-size:13px;line-height:1.7;">⚠️ 어떤 공연에 대한 신청인지 확인할 수 없어요. 앱의 공연 탭에서 [🎶 곡·안무팀장 신청] 버튼을 눌러 다시 들어와주세요.</p>
+  </div>
+
+  <div class="notice-card" id="deadline-notice" style="display:none;">
+    <p style="font-size:13px;line-height:1.7;" id="deadline-notice-text"></p>
   </div>
 
   <div class="notice-card">
@@ -298,7 +304,11 @@
 
     <div class="section-label" style="margin-top:26px;">신청 현황</div>
     <div id="song-status-list"></div>
-    <button class="roster-btn" onclick="copyRoster('song')">📋 정리하기 (복사)</button>
+    <button class="roster-btn" onclick="prepareRoster('song')">📋 정리하기</button>
+    <div class="roster-action-row" id="song-roster-actions">
+      <button class="roster-btn" style="margin-top:0;" onclick="copyRosterText('song')">📋 복사</button>
+      <button class="roster-btn" style="margin-top:0;" onclick="shareRosterText('song')">🔗 공유하기</button>
+    </div>
     <textarea class="roster-text" id="song-roster-text" readonly></textarea>
   </div>
 
@@ -373,7 +383,11 @@
 
     <div class="section-label" style="margin-top:26px;">신청 현황</div>
     <div id="choreo-status-list"></div>
-    <button class="roster-btn" onclick="copyRoster('choreo')">📋 정리하기 (복사)</button>
+    <button class="roster-btn" onclick="prepareRoster('choreo')">📋 정리하기</button>
+    <div class="roster-action-row" id="choreo-roster-actions">
+      <button class="roster-btn" style="margin-top:0;" onclick="copyRosterText('choreo')">📋 복사</button>
+      <button class="roster-btn" style="margin-top:0;" onclick="shareRosterText('choreo')">🔗 공유하기</button>
+    </div>
     <textarea class="roster-text" id="choreo-roster-text" readonly></textarea>
   </div>
 </div>
@@ -386,6 +400,8 @@ const PERF_API_URL = 'https://script.google.com/macros/s/AKfycbzoa7lLjpus_VLNhVd
 const params = new URLSearchParams(window.location.search);
 const PERF_ID = params.get('perfId');
 const PERF_NAME = params.get('perfName') || '';
+const DEADLINE = params.get('deadline') || '';
+const DEADLINE_PASSED = DEADLINE ? new Date(DEADLINE) < new Date() : false;
 
 let songList = [];
 let choreoList = [];
@@ -401,6 +417,21 @@ async function initPerfContext(){
     return;
   }
   document.getElementById('perf-context').textContent = `📅 ${PERF_NAME || '선택된 공연'} 신청`;
+  if(DEADLINE){
+    const label = DEADLINE.replace('T',' ');
+    const notice=document.getElementById('deadline-notice');
+    const text=document.getElementById('deadline-notice-text');
+    notice.style.display='block';
+    if(DEADLINE_PASSED){
+      notice.style.borderColor='rgba(255,107,107,0.28)';
+      text.style.color='var(--danger)';
+      text.textContent=`⏰ 신청이 마감되었습니다 (${label})`;
+      ['song-submit-btn','choreo-submit-btn'].forEach(id=>document.getElementById(id).disabled=true);
+    } else {
+      text.style.color='var(--muted2)';
+      text.textContent=`⏰ 신청 마감: ${label}까지`;
+    }
+  }
   await Promise.all([loadSongList(), loadChoreoList()]);
 }
 initPerfContext();
@@ -441,7 +472,7 @@ function checkSongSubmit(){
   const members=document.getElementById('song-members').value;
   const duration=getDurationRange('song');
   const link=document.getElementById('song-link').value.trim();
-  document.getElementById('song-submit-btn').disabled = !(applicant && name && members && duration && link);
+  document.getElementById('song-submit-btn').disabled = DEADLINE_PASSED || !(applicant && name && members && duration && link);
 }
 function checkChoreoSubmit(){
   const applicant=document.getElementById('choreo-applicant').value.trim();
@@ -450,7 +481,7 @@ function checkChoreoSubmit(){
   const duration=getDurationRange('choreo');
   const link=document.getElementById('choreo-link').value.trim();
   const condition=document.getElementById('choreo-condition').value.trim();
-  document.getElementById('choreo-submit-btn').disabled = !(applicant && name && members && duration && link && condition);
+  document.getElementById('choreo-submit-btn').disabled = DEADLINE_PASSED || !(applicant && name && members && duration && link && condition);
 }
 
 let editingSongId = null;
@@ -486,10 +517,11 @@ function renderStatusList(prefix, list, metaFn, extraFn){
         ${extraFn ? `<div class="entry-meta">${extraFn(s)}</div>` : ''}
         <div class="entry-formatted"><a href="${escapeHtml(String(s.link))}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(s.link))}</a></div>
       </div>
+      ${DEADLINE_PASSED ? '' : `
       <div class="entry-actions">
         <button class="entry-action-btn" onclick="${prefix==='song'?'startEditSong':'startEditChoreo'}(${s.id})">수정</button>
         <button class="entry-action-btn danger" onclick="${prefix==='song'?'deleteSongEntry':'deleteChoreoEntry'}(${s.id})">삭제</button>
-      </div>
+      </div>`}
     </div>`).join('');
 }
 
@@ -579,22 +611,39 @@ async function deleteChoreoEntry(id){
   showToast('✗ 안무팀장 신청 삭제 완료','error');
 }
 
-async function copyRoster(prefix){
+function buildRosterText(list){
+  return list.map(s=>`${s.name} (${s.members})\n=> ${s.link}`).join('\n\n');
+}
+function prepareRoster(prefix){
   const list = prefix==='song' ? songList : choreoList;
   const box = document.getElementById(`${prefix}-roster-text`);
+  const actions = document.getElementById(`${prefix}-roster-actions`);
   if(!list.length){
     showToast('정리할 신청 내역이 없어요','error');
     return;
   }
-  const text = list.map(s=>`[${s.name}/${s.members}]`).join('\n');
-  box.value = text;
+  box.value = buildRosterText(list);
   box.classList.add('visible');
+  actions.classList.add('visible');
+}
+async function copyRosterText(prefix){
+  const box = document.getElementById(`${prefix}-roster-text`);
+  if(!box.value){ showToast('먼저 정리하기를 눌러주세요','error'); return; }
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(box.value);
     showToast('✓ 복사 완료','success');
   } catch(e) {
     box.focus(); box.select();
     showToast('아래 내용을 직접 선택해서 복사해주세요','error');
+  }
+}
+async function shareRosterText(prefix){
+  const box = document.getElementById(`${prefix}-roster-text`);
+  if(!box.value){ showToast('먼저 정리하기를 눌러주세요','error'); return; }
+  if(navigator.share){
+    try { await navigator.share({ text: box.value }); } catch(e) { /* user cancelled */ }
+  } else {
+    showToast('이 브라우저는 공유하기를 지원하지 않아요, 복사를 이용해주세요','error');
   }
 }
 
