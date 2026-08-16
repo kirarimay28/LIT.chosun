@@ -1280,18 +1280,19 @@ function renderRosterHtml(perfId, songs, choreo){
     <div class="entry-card">
       <div class="entry-icon">🎶</div>
       <div class="entry-info">
-        <div class="entry-song">${escapeHtml(s.name)}</div>
-        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}</div>
-        <div class="entry-formatted">${escapeHtml(String(s.link))}</div>
+        <div class="entry-song">${escapeHtml(s.name)} (${escapeHtml(String(s.members))}명)</div>
+        <div class="entry-meta">신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}</div>
+        <div class="entry-formatted"><a href="${escapeHtml(String(s.link))}" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,0.4);">${escapeHtml(String(s.link))}</a></div>
       </div>
     </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 곡이 없어요</p></div>`;
   const choreoHtml = choreo.length ? choreo.map(s=>`
     <div class="entry-card">
       <div class="entry-icon">💃</div>
       <div class="entry-info">
-        <div class="entry-song">${escapeHtml(s.name)}</div>
-        <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))} · 신청자 ${escapeHtml(String(s.applicantName))}</div>
-        <div class="entry-formatted">${escapeHtml(String(s.link))} · ${escapeHtml(String(s.condition))}</div>
+        <div class="entry-song">${escapeHtml(s.name)} (${escapeHtml(String(s.members))}명)</div>
+        <div class="entry-meta">신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}</div>
+        <div class="entry-meta">${escapeHtml(String(s.condition))}</div>
+        <div class="entry-formatted"><a href="${escapeHtml(String(s.link))}" target="_blank" rel="noopener noreferrer" style="color:rgba(255,255,255,0.4);">${escapeHtml(String(s.link))}</a></div>
       </div>
     </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 안무팀장이 없어요</p></div>`;
   return `
