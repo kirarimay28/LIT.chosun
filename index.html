@@ -188,6 +188,9 @@
   .min-custom-input:focus { border-color:rgba(255,255,255,0.28); box-shadow:0 0 0 3px rgba(255,255,255,0.04); }
   .min-custom-input::placeholder { color:var(--muted); }
   .roster-copy-text { min-height:100px; resize:vertical; line-height:1.8; margin-bottom:14px; }
+  .roster-action-row { display:none; gap:6px; margin-top:8px; }
+  .roster-action-row.visible { display:flex; }
+  .field-hint { font-size:11px; color:var(--muted2); font-family:'Space Mono',monospace; margin-top:8px; }
 
   .hours-notice {
     display:none; background:rgba(255,107,107,0.07);
@@ -582,6 +585,34 @@
       <div class="section-label">드레스코드</div>
       <input type="text" class="form-input" id="perf-dresscode" placeholder="예) 전체 블랙" oninput="checkPerfSubmit()" />
 
+      <div class="section-label">곡·안무팀장 신청 마감 (선택)</div>
+      <div class="date-select-row">
+        <select class="time-select" id="perf-dl-year" onchange="onDatePartChange('perf-dl')"></select>
+        <select class="time-select" id="perf-dl-month" onchange="onDatePartChange('perf-dl')"></select>
+        <select class="time-select" id="perf-dl-day" onchange="onDatePartChange('perf-dl')"></select>
+      </div>
+      <input type="hidden" id="perf-dl-date" />
+      <div class="time-picker-group" style="margin-top:8px;">
+        <span class="time-select-label">시간</span>
+        <div class="time-picker-inputs">
+          <select class="time-select" id="perf-dl-hour" onchange="checkPerfSubmit()">
+            <option value="">시</option>
+          </select>
+          <select class="time-select" id="perf-dl-min" onchange="onPerfDeadlineMinChange()">
+            <option value="">분</option>
+            <option value="0">00</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+            <option value="custom">기타</option>
+          </select>
+        </div>
+        <input type="number" class="min-custom-input" id="perf-dl-min-custom" min="0" max="59" placeholder="분 직접입력 (0-59)" oninput="checkPerfSubmit()" />
+      </div>
+      <div class="field-hint">비워두면 마감 없이 계속 신청받아요</div>
+
       <button class="submit-btn" id="perf-submit-btn" onclick="submitPerformance()" disabled>등록하기</button>
       <button class="submit-btn cancel-submit-btn" id="perf-cancel-edit-btn" style="display:none;margin-top:10px;" onclick="cancelPerfEdit()">수정 취소</button>
     </div>
@@ -666,10 +697,11 @@ function getHours(dateStr){
 
 // Date pickers (year/month/day dropdowns synced into a hidden input)
 const DATE_PICKERS = {
-  apply:  { hiddenId:'apply-date',        allowEmpty:false },
-  list:   { hiddenId:'list-date-filter',  allowEmpty:true  },
-  cancel: { hiddenId:'cancel-date',       allowEmpty:false },
-  perf:   { hiddenId:'perf-date',         allowEmpty:false }
+  apply:   { hiddenId:'apply-date',        allowEmpty:false },
+  list:    { hiddenId:'list-date-filter',  allowEmpty:true  },
+  cancel:  { hiddenId:'cancel-date',       allowEmpty:false },
+  perf:    { hiddenId:'perf-date',         allowEmpty:false },
+  'perf-dl': { hiddenId:'perf-dl-date',    allowEmpty:true  }
 };
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
 function buildDatePicker(prefix){
@@ -720,6 +752,7 @@ function onDatePartChange(prefix){
   else if(prefix==='list') renderList();
   else if(prefix==='cancel') renderCancelList();
   else if(prefix==='perf') checkPerfSubmit();
+  else if(prefix==='perf-dl') checkPerfSubmit();
 }
 function onDateChange(){
   const date=document.getElementById('apply-date').value;
@@ -801,19 +834,20 @@ function setLoading(show){
 // Init
 async function init(){
   const today = new Date().toISOString().split('T')[0];
-  ['apply','list','cancel','perf'].forEach(buildDatePicker);
+  ['apply','list','cancel','perf','perf-dl'].forEach(buildDatePicker);
   setDatePickerValue('apply', today);
   setDatePickerValue('perf', today);
   buildTimeSelects(today);
-  buildPerfHourSelect();
+  buildHourSelect('perf-hour');
+  buildHourSelect('perf-dl-hour');
   showToast('📡 데이터 불러오는 중...', 'success');
   await apiGet();
   checkSubmit();
   renderList();
 }
 
-function buildPerfHourSelect(){
-  const sel=document.getElementById('perf-hour');
+function buildHourSelect(id){
+  const sel=document.getElementById(id);
   let html='<option value="">시</option>';
   for(let i=0;i<24;i++) html+=`<option value="${i}">${String(i).padStart(2,'0')}시</option>`;
   sel.innerHTML=html;
@@ -1101,12 +1135,20 @@ function executeCancel(){
 }
 
 // Performance
+function getPerfDeadlineValue(){
+  const date=document.getElementById('perf-dl-date').value;
+  const timeMin=getTimeVal('perf-dl');
+  if(!date && timeMin===null) return {valid:true, value:''};
+  if(date && timeMin!==null) return {valid:true, value:`${date}T${fmtTime(timeMin)}`};
+  return {valid:false, value:''};
+}
 function checkPerfSubmit(){
   const name=document.getElementById('perf-name').value.trim();
   const date=document.getElementById('perf-date').value;
   const timeMin=getTimeVal('perf');
   const dressCode=document.getElementById('perf-dresscode').value.trim();
-  const valid = !!name && !!date && timeMin!==null && !!dressCode;
+  const deadline=getPerfDeadlineValue();
+  const valid = !!name && !!date && timeMin!==null && !!dressCode && deadline.valid;
   document.getElementById('perf-submit-btn').disabled = !valid;
 }
 function onPerfMinChange(){
@@ -1115,23 +1157,53 @@ function onPerfMinChange(){
   if(v==='custom'){ci.classList.add('visible');ci.value='';} else {ci.classList.remove('visible');}
   checkPerfSubmit();
 }
+function onPerfDeadlineMinChange(){
+  const v=document.getElementById('perf-dl-min').value;
+  const ci=document.getElementById('perf-dl-min-custom');
+  if(v==='custom'){ci.classList.add('visible');ci.value='';} else {ci.classList.remove('visible');}
+  checkPerfSubmit();
+}
+function applyTimeToPicker(prefix, totalMin){
+  const h=Math.floor(totalMin/60), m=totalMin%60;
+  document.getElementById(`${prefix}-hour`).value=h;
+  const stdMinutes=['0','10','20','30','40','50'];
+  if(stdMinutes.includes(String(m))){
+    document.getElementById(`${prefix}-min`).value=String(m);
+    document.getElementById(`${prefix}-min-custom`).classList.remove('visible');
+  } else {
+    document.getElementById(`${prefix}-min`).value='custom';
+    document.getElementById(`${prefix}-min-custom`).value=m;
+    document.getElementById(`${prefix}-min-custom`).classList.add('visible');
+  }
+}
+function clearPerfDeadlineFields(){
+  document.getElementById('perf-dl-year').value='';
+  document.getElementById('perf-dl-month').value='';
+  document.getElementById('perf-dl-day').value='';
+  document.getElementById('perf-dl-date').value='';
+  document.getElementById('perf-dl-hour').value='';
+  document.getElementById('perf-dl-min').value='';
+  document.getElementById('perf-dl-min-custom').value='';
+  document.getElementById('perf-dl-min-custom').classList.remove('visible');
+}
 async function submitPerformance(){
   const name=document.getElementById('perf-name').value.trim();
   const date=document.getElementById('perf-date').value;
   const timeMin=getTimeVal('perf');
   const dressCode=document.getElementById('perf-dresscode').value.trim();
-  if(!name||!date||timeMin===null||!dressCode) return;
+  const deadline=getPerfDeadlineValue();
+  if(!name||!date||timeMin===null||!dressCode||!deadline.valid) return;
   const datetime=`${date}T${fmtTime(timeMin)}`;
   const btn=document.getElementById('perf-submit-btn');
   btn.disabled=true;
   const isEdit=editingPerfId!==null;
   btn.textContent=isEdit?'수정 중...':'등록 중...';
   if(isEdit){
-    await perfApiUpdate({id:editingPerfId,name,datetime,dressCode});
+    await perfApiUpdate({id:editingPerfId,name,datetime,dressCode,deadline:deadline.value});
   } else {
     const today=new Date();
     const localDate=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    await perfApiAdd({id:Date.now(),name,datetime,dressCode,createdAt:localDate});
+    await perfApiAdd({id:Date.now(),name,datetime,dressCode,deadline:deadline.value,createdAt:localDate});
   }
   await perfApiGet();
   showToast(`✓  <${name}>  ${isEdit?'수정':'등록'} 완료`,'success');
@@ -1147,6 +1219,7 @@ function resetPerfForm(){
   document.getElementById('perf-min-custom').value='';
   document.getElementById('perf-min-custom').classList.remove('visible');
   setDatePickerValue('perf', new Date().toISOString().split('T')[0]);
+  clearPerfDeadlineFields();
   document.getElementById('perf-submit-btn').textContent='등록하기';
   document.getElementById('perf-submit-btn').disabled=true;
   document.getElementById('perf-cancel-edit-btn').style.display='none';
@@ -1160,15 +1233,14 @@ function startEditPerf(id){
   const [d,t]=String(p.datetime).split('T');
   setDatePickerValue('perf', d);
   const [hh,mm]=t.split(':').map(Number);
-  document.getElementById('perf-hour').value=hh;
-  const stdMinutes=['0','10','20','30','40','50'];
-  if(stdMinutes.includes(String(mm))){
-    document.getElementById('perf-min').value=String(mm);
-    document.getElementById('perf-min-custom').classList.remove('visible');
+  applyTimeToPicker('perf', hh*60+mm);
+  if(p.deadline){
+    const [dd,dt]=String(p.deadline).split('T');
+    setDatePickerValue('perf-dl', dd);
+    const [dhh,dmm]=dt.split(':').map(Number);
+    applyTimeToPicker('perf-dl', dhh*60+dmm);
   } else {
-    document.getElementById('perf-min').value='custom';
-    document.getElementById('perf-min-custom').value=mm;
-    document.getElementById('perf-min-custom').classList.add('visible');
+    clearPerfDeadlineFields();
   }
   document.getElementById('perf-submit-btn').textContent='수정 완료';
   document.getElementById('perf-cancel-edit-btn').style.display='block';
@@ -1208,7 +1280,9 @@ function renderPerfList(){
   }
   c.innerHTML=performances.map(p=>{
     const [d,t]=String(p.datetime).split('T');
-    const applyUrl=`song-apply.html?perfId=${p.id}&perfName=${encodeURIComponent(p.name)}`;
+    const deadlinePassed = p.deadline && new Date(p.deadline) < new Date();
+    const applyUrl=`song-apply.html?perfId=${p.id}&perfName=${encodeURIComponent(p.name)}${p.deadline?`&deadline=${encodeURIComponent(p.deadline)}`:''}`;
+    const deadlineLabel = p.deadline ? `${String(p.deadline).replace('T',' ')} 마감${deadlinePassed?' (마감됨)':''}` : '마감 없음';
     return `
     <div class="entry-card" style="flex-direction:column;align-items:stretch;">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -1216,6 +1290,7 @@ function renderPerfList(){
         <div class="entry-info">
           <div class="entry-song">${escapeHtml(p.name)}</div>
           <div class="entry-meta">${d} · ${t} · ${escapeHtml(p.dressCode)}</div>
+          <div class="entry-formatted">신청 ${deadlineLabel}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="perf-action-btn" onclick="startEditPerf(${p.id})">수정</button>
@@ -1259,20 +1334,37 @@ async function toggleSongRoster(perfId){
   container.style.display='block';
   state.open=true;
 }
-async function copyPerfRoster(perfId, kind){
+function buildRosterText(list){
+  return list.map(s=>`${s.name} (${s.members})\n=> ${s.link}`).join('\n\n');
+}
+function prepareRoster(perfId, kind){
   const state=perfRosterState[perfId];
   const list = state ? (kind==='song'?state.songs:state.choreo) : [];
   const box=document.getElementById(`roster-text-${kind}-${perfId}`);
+  const actions=document.getElementById(`roster-actions-${kind}-${perfId}`);
   if(!list || !list.length){ showToast('정리할 신청 내역이 없어요','error'); return; }
-  const text=list.map(s=>`[${s.name}/${s.members}]`).join('\n');
-  box.value=text;
+  box.value=buildRosterText(list);
   box.classList.add('visible');
+  actions.classList.add('visible');
+}
+async function copyPerfRosterText(perfId, kind){
+  const box=document.getElementById(`roster-text-${kind}-${perfId}`);
+  if(!box.value){ showToast('먼저 정리하기를 눌러주세요','error'); return; }
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(box.value);
     showToast('✓ 복사 완료','success');
   } catch(e) {
     box.focus(); box.select();
     showToast('아래 내용을 직접 선택해서 복사해주세요','error');
+  }
+}
+async function sharePerfRosterText(perfId, kind){
+  const box=document.getElementById(`roster-text-${kind}-${perfId}`);
+  if(!box.value){ showToast('먼저 정리하기를 눌러주세요','error'); return; }
+  if(navigator.share){
+    try { await navigator.share({ text: box.value }); } catch(e) { /* user cancelled */ }
+  } else {
+    showToast('이 브라우저는 공유하기를 지원하지 않아요, 복사를 이용해주세요','error');
   }
 }
 function renderRosterHtml(perfId, songs, choreo){
@@ -1298,11 +1390,19 @@ function renderRosterHtml(perfId, songs, choreo){
   return `
     <div class="section-label" style="margin-top:0;">신청된 곡</div>
     ${songsHtml}
-    <button class="perf-action-btn" onclick="copyPerfRoster(${perfId},'song')">📋 정리하기 (복사)</button>
+    <button class="perf-action-btn" onclick="prepareRoster(${perfId},'song')">📋 정리하기</button>
+    <div class="roster-action-row" id="roster-actions-song-${perfId}">
+      <button class="perf-action-btn" onclick="copyPerfRosterText(${perfId},'song')">📋 복사</button>
+      <button class="perf-action-btn" onclick="sharePerfRosterText(${perfId},'song')">🔗 공유하기</button>
+    </div>
     <textarea class="min-custom-input roster-copy-text" id="roster-text-song-${perfId}" readonly></textarea>
     <div class="section-label">안무팀장 신청</div>
     ${choreoHtml}
-    <button class="perf-action-btn" onclick="copyPerfRoster(${perfId},'choreo')">📋 정리하기 (복사)</button>
+    <button class="perf-action-btn" onclick="prepareRoster(${perfId},'choreo')">📋 정리하기</button>
+    <div class="roster-action-row" id="roster-actions-choreo-${perfId}">
+      <button class="perf-action-btn" onclick="copyPerfRosterText(${perfId},'choreo')">📋 복사</button>
+      <button class="perf-action-btn" onclick="sharePerfRosterText(${perfId},'choreo')">🔗 공유하기</button>
+    </div>
     <textarea class="min-custom-input roster-copy-text" id="roster-text-choreo-${perfId}" readonly></textarea>
   `;
 }
