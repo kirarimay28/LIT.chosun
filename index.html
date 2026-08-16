@@ -766,7 +766,7 @@ function onDateChange(){
 // API
 async function apiGet(){
   try {
-    const res = await fetch(API_URL + '?action=getAll');
+    const res = await fetch(API_URL + '?action=getAll', {cache:'no-store'});
     const data = await res.json();
     reservations = data.map(r => ({...r, id: Number(r.id)}));
     await purgeExpiredReservations();
@@ -798,7 +798,7 @@ async function apiDelete(id){
 // Performance API
 async function perfApiGet(){
   try {
-    const res = await fetch(PERF_API_URL + '?action=getAll');
+    const res = await fetch(PERF_API_URL + '?action=getAll', {cache:'no-store'});
     const data = await res.json();
     performances = data.map(p => ({...p, id: Number(p.id), confirmed: p.confirmed===true||p.confirmed==='true'||p.confirmed==='TRUE'}));
     performances.sort((a,b)=> String(a.datetime).localeCompare(String(b.datetime)));
@@ -1326,8 +1326,8 @@ async function toggleSongRoster(perfId){
   const state=perfRosterState[perfId] || (perfRosterState[perfId]={open:false});
   if(state.open){ container.style.display='none'; state.open=false; return; }
   const [songs, choreo] = await Promise.all([
-    fetch(`${PERF_API_URL}?action=getSongs&perfId=${perfId}`).then(r=>r.json()),
-    fetch(`${PERF_API_URL}?action=getChoreo&perfId=${perfId}`).then(r=>r.json())
+    fetch(`${PERF_API_URL}?action=getSongs&perfId=${perfId}`, {cache:'no-store'}).then(r=>r.json()),
+    fetch(`${PERF_API_URL}?action=getChoreo&perfId=${perfId}`, {cache:'no-store'}).then(r=>r.json())
   ]);
   state.songs=songs; state.choreo=choreo;
   container.innerHTML = renderRosterHtml(perfId, songs, choreo);
