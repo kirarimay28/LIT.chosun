@@ -489,14 +489,14 @@ let editingChoreoId = null;
 
 async function loadSongList(){
   try {
-    const res = await fetch(`${PERF_API_URL}?action=getSongs&perfId=${PERF_ID}`);
+    const res = await fetch(`${PERF_API_URL}?action=getSongs&perfId=${PERF_ID}`, {cache:'no-store'});
     songList = await res.json();
   } catch(e) { songList = []; }
   renderStatusList('song', songList, s=>`신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}`, null);
 }
 async function loadChoreoList(){
   try {
-    const res = await fetch(`${PERF_API_URL}?action=getChoreo&perfId=${PERF_ID}`);
+    const res = await fetch(`${PERF_API_URL}?action=getChoreo&perfId=${PERF_ID}`, {cache:'no-store'});
     choreoList = await res.json();
   } catch(e) { choreoList = []; }
   renderStatusList('choreo', choreoList, s=>`신청자 ${escapeHtml(String(s.applicantName))} · ${escapeHtml(String(s.duration))}`, s=>escapeHtml(String(s.condition)));
