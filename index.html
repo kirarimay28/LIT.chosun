@@ -280,6 +280,14 @@
   .entry-song { font-size:14px; font-weight:700; color:rgba(255,255,255,0.88); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .entry-meta { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted2); }
   .entry-formatted { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.25); margin-top:3px; }
+  .perf-action-btn {
+    background:var(--surface2); border:1px solid var(--border2);
+    border-radius:8px; padding:8px 12px; font-size:11px;
+    color:var(--muted2); font-family:'Space Mono',monospace;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .perf-action-btn:hover { border-color:rgba(255,255,255,0.25); color:#fff; }
+  .perf-action-btn.danger:hover { border-color:rgba(255,107,107,0.4); color:var(--danger); }
 
   .empty-state { text-align:center; padding:60px 20px; color:var(--muted2); }
   .empty-state .empty-icon { font-size:38px; margin-bottom:14px; opacity:0.35; }
@@ -409,6 +417,7 @@
     <button class="tab-btn active" onclick="switchTab('apply')">✏️ 사용 신청</button>
     <button class="tab-btn" onclick="switchTab('list')">📋 신청 명단</button>
     <button class="tab-btn" onclick="switchTab('cancel')">🗑️ 신청 취소</button>
+    <button class="tab-btn" onclick="switchTab('performance')">🎤 공연</button>
   </div>
 
   <!-- Apply Panel -->
@@ -535,6 +544,50 @@
       <button class="submit-btn cancel-submit-btn" id="cancel-submit-btn" onclick="openCancelConfirmModal()" disabled>신청 취소하기</button>
     </div>
   </div>
+
+  <!-- Performance Panel -->
+  <div id="panel-performance" class="panel">
+    <div class="form-card">
+      <div class="section-label">공연 명</div>
+      <input type="text" class="form-input" id="perf-name" placeholder="예) 총축 무대" oninput="checkPerfSubmit()" />
+
+      <div class="section-label">공연 일시</div>
+      <div class="date-select-row">
+        <select class="time-select" id="perf-year" onchange="onDatePartChange('perf')"></select>
+        <select class="time-select" id="perf-month" onchange="onDatePartChange('perf')"></select>
+        <select class="time-select" id="perf-day" onchange="onDatePartChange('perf')"></select>
+      </div>
+      <input type="hidden" id="perf-date" />
+      <div class="time-picker-group" style="margin-top:8px;">
+        <span class="time-select-label">시간</span>
+        <div class="time-picker-inputs">
+          <select class="time-select" id="perf-hour" onchange="checkPerfSubmit()">
+            <option value="">시</option>
+          </select>
+          <select class="time-select" id="perf-min" onchange="onPerfMinChange()">
+            <option value="">분</option>
+            <option value="0">00</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+            <option value="custom">기타</option>
+          </select>
+        </div>
+        <input type="number" class="min-custom-input" id="perf-min-custom" min="0" max="59" placeholder="분 직접입력 (0-59)" oninput="checkPerfSubmit()" />
+      </div>
+
+      <div class="section-label">드레스코드</div>
+      <input type="text" class="form-input" id="perf-dresscode" placeholder="예) 전체 블랙" oninput="checkPerfSubmit()" />
+
+      <button class="submit-btn" id="perf-submit-btn" onclick="submitPerformance()" disabled>등록하기</button>
+      <button class="submit-btn cancel-submit-btn" id="perf-cancel-edit-btn" style="display:none;margin-top:10px;" onclick="cancelPerfEdit()">수정 취소</button>
+    </div>
+
+    <div class="section-label" style="margin-top:26px;">등록된 공연</div>
+    <div id="perf-list-container"></div>
+  </div>
 </div>
 
 <!-- Confirm Modal -->
@@ -563,6 +616,19 @@
   </div>
 </div>
 
+<!-- Performance Delete Confirm Modal -->
+<div class="modal-backdrop cancel-confirm" id="perf-delete-modal">
+  <div class="modal">
+    <h3>공연 삭제</h3>
+    <p>이 공연 등록을 정말 삭제할까요? 이 작업은 되돌릴 수 없어요.</p>
+    <div class="modal-highlight" id="perf-delete-modal-summary"></div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closePerfDeleteModal()">돌아가기</button>
+      <button class="modal-btn confirm" onclick="executePerfDelete()">삭제 확정</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -580,7 +646,15 @@
 
 // State
 const API_URL = 'https://script.google.com/macros/s/AKfycbx-pOpiOoSsgQFJOiq2ptu13cElg68ypNf9NdrstmPxivYiMEUr63FQstjAKeBcu0JeSA/exec';
+const PERF_API_URL = 'https://script.google.com/macros/s/AKfycbzoa7lLjpus_VLNhVdnOB0rd6okTEwv8RzWBdFvDf_qElPhDKDJy6TxFRNx5tXsZVuT/exec';
 let reservations = [];
+let performances = [];
+let editingPerfId = null;
+let deletingPerfId = null;
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
 
 // Hours
 function getHours(dateStr){
@@ -593,7 +667,8 @@ function getHours(dateStr){
 const DATE_PICKERS = {
   apply:  { hiddenId:'apply-date',        allowEmpty:false },
   list:   { hiddenId:'list-date-filter',  allowEmpty:true  },
-  cancel: { hiddenId:'cancel-date',       allowEmpty:false }
+  cancel: { hiddenId:'cancel-date',       allowEmpty:false },
+  perf:   { hiddenId:'perf-date',         allowEmpty:false }
 };
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
 function buildDatePicker(prefix){
@@ -643,6 +718,7 @@ function onDatePartChange(prefix){
   if(prefix==='apply') onDateChange();
   else if(prefix==='list') renderList();
   else if(prefix==='cancel') renderCancelList();
+  else if(prefix==='perf') checkPerfSubmit();
 }
 function onDateChange(){
   const date=document.getElementById('apply-date').value;
@@ -685,6 +761,36 @@ async function apiDelete(id){
   });
 }
 
+// Performance API
+async function perfApiGet(){
+  try {
+    const res = await fetch(PERF_API_URL + '?action=getAll');
+    const data = await res.json();
+    performances = data.map(p => ({...p, id: Number(p.id)}));
+    performances.sort((a,b)=> String(a.datetime).localeCompare(String(b.datetime)));
+  } catch(e) {
+    showToast('⚠️ 공연 데이터 불러오기 실패', 'error');
+  }
+}
+async function perfApiAdd(entry){
+  await fetch(PERF_API_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'add', ...entry})
+  });
+}
+async function perfApiUpdate(entry){
+  await fetch(PERF_API_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'update', ...entry})
+  });
+}
+async function perfApiDelete(id){
+  await fetch(PERF_API_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'delete', id})
+  });
+}
+
 // Loading indicator
 function setLoading(show){
   document.getElementById('submit-btn').disabled = show;
@@ -694,13 +800,22 @@ function setLoading(show){
 // Init
 async function init(){
   const today = new Date().toISOString().split('T')[0];
-  ['apply','list','cancel'].forEach(buildDatePicker);
+  ['apply','list','cancel','perf'].forEach(buildDatePicker);
   setDatePickerValue('apply', today);
+  setDatePickerValue('perf', today);
   buildTimeSelects(today);
+  buildPerfHourSelect();
   showToast('📡 데이터 불러오는 중...', 'success');
   await apiGet();
   checkSubmit();
   renderList();
+}
+
+function buildPerfHourSelect(){
+  const sel=document.getElementById('perf-hour');
+  let html='<option value="">시</option>';
+  for(let i=0;i<24;i++) html+=`<option value="${i}">${String(i).padStart(2,'0')}시</option>`;
+  sel.innerHTML=html;
 }
 
 function buildTimeSelects(dateStr){
@@ -817,7 +932,7 @@ document.getElementById('song-name').addEventListener('input',checkSubmit);
 
 // Tabs
 function switchTab(tab){
-  ['apply','list','cancel'].forEach((t,i)=>{
+  ['apply','list','cancel','performance'].forEach((t,i)=>{
     document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===tab);
     document.getElementById(`panel-${t}`).classList.toggle('active',t===tab);
   });
@@ -826,6 +941,7 @@ function switchTab(tab){
     setDatePickerValue('cancel', new Date().toISOString().split('T')[0]);
     apiGet().then(()=>renderCancelList());
   }
+  if(tab==='performance') perfApiGet().then(()=>renderPerfList());
 }
 
 // Modal
@@ -981,6 +1097,129 @@ function executeCancel(){
     document.getElementById('cancel-submit-btn').textContent='신청 취소하기';
     renderCancelList();
   });
+}
+
+// Performance
+function checkPerfSubmit(){
+  const name=document.getElementById('perf-name').value.trim();
+  const date=document.getElementById('perf-date').value;
+  const timeMin=getTimeVal('perf');
+  const dressCode=document.getElementById('perf-dresscode').value.trim();
+  const valid = !!name && !!date && timeMin!==null && !!dressCode;
+  document.getElementById('perf-submit-btn').disabled = !valid;
+}
+function onPerfMinChange(){
+  const v=document.getElementById('perf-min').value;
+  const ci=document.getElementById('perf-min-custom');
+  if(v==='custom'){ci.classList.add('visible');ci.value='';} else {ci.classList.remove('visible');}
+  checkPerfSubmit();
+}
+async function submitPerformance(){
+  const name=document.getElementById('perf-name').value.trim();
+  const date=document.getElementById('perf-date').value;
+  const timeMin=getTimeVal('perf');
+  const dressCode=document.getElementById('perf-dresscode').value.trim();
+  if(!name||!date||timeMin===null||!dressCode) return;
+  const datetime=`${date}T${fmtTime(timeMin)}`;
+  const btn=document.getElementById('perf-submit-btn');
+  btn.disabled=true;
+  const isEdit=editingPerfId!==null;
+  btn.textContent=isEdit?'수정 중...':'등록 중...';
+  if(isEdit){
+    await perfApiUpdate({id:editingPerfId,name,datetime,dressCode});
+  } else {
+    const today=new Date();
+    const localDate=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    await perfApiAdd({id:Date.now(),name,datetime,dressCode,createdAt:localDate});
+  }
+  await perfApiGet();
+  showToast(`✓  <${name}>  ${isEdit?'수정':'등록'} 완료`,'success');
+  resetPerfForm();
+  renderPerfList();
+}
+function resetPerfForm(){
+  editingPerfId=null;
+  document.getElementById('perf-name').value='';
+  document.getElementById('perf-dresscode').value='';
+  document.getElementById('perf-hour').value='';
+  document.getElementById('perf-min').value='';
+  document.getElementById('perf-min-custom').value='';
+  document.getElementById('perf-min-custom').classList.remove('visible');
+  setDatePickerValue('perf', new Date().toISOString().split('T')[0]);
+  document.getElementById('perf-submit-btn').textContent='등록하기';
+  document.getElementById('perf-submit-btn').disabled=true;
+  document.getElementById('perf-cancel-edit-btn').style.display='none';
+}
+function startEditPerf(id){
+  const p=performances.find(x=>x.id===id);
+  if(!p) return;
+  editingPerfId=p.id;
+  document.getElementById('perf-name').value=p.name;
+  document.getElementById('perf-dresscode').value=p.dressCode;
+  const [d,t]=String(p.datetime).split('T');
+  setDatePickerValue('perf', d);
+  const [hh,mm]=t.split(':').map(Number);
+  document.getElementById('perf-hour').value=hh;
+  const stdMinutes=['0','10','20','30','40','50'];
+  if(stdMinutes.includes(String(mm))){
+    document.getElementById('perf-min').value=String(mm);
+    document.getElementById('perf-min-custom').classList.remove('visible');
+  } else {
+    document.getElementById('perf-min').value='custom';
+    document.getElementById('perf-min-custom').value=mm;
+    document.getElementById('perf-min-custom').classList.add('visible');
+  }
+  document.getElementById('perf-submit-btn').textContent='수정 완료';
+  document.getElementById('perf-cancel-edit-btn').style.display='block';
+  checkPerfSubmit();
+  document.getElementById('panel-performance').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cancelPerfEdit(){ resetPerfForm(); }
+function openPerfDeleteModal(id){
+  const p=performances.find(x=>x.id===id);
+  if(!p) return;
+  deletingPerfId=id;
+  const [d,t]=String(p.datetime).split('T');
+  document.getElementById('perf-delete-modal-summary').innerHTML=
+    `🎤  ${escapeHtml(p.name)}\n📅  ${d} ${t}\n👕  ${escapeHtml(p.dressCode)}`;
+  document.getElementById('perf-delete-modal').classList.add('open');
+}
+function closePerfDeleteModal(){
+  document.getElementById('perf-delete-modal').classList.remove('open');
+  deletingPerfId=null;
+}
+document.getElementById('perf-delete-modal').addEventListener('click',function(e){if(e.target===this)closePerfDeleteModal();});
+async function executePerfDelete(){
+  if(deletingPerfId===null) return;
+  const id=deletingPerfId;
+  closePerfDeleteModal();
+  await perfApiDelete(id);
+  await perfApiGet();
+  if(editingPerfId===id) resetPerfForm();
+  renderPerfList();
+  showToast('✗  공연 삭제 완료','error');
+}
+function renderPerfList(){
+  const c=document.getElementById('perf-list-container');
+  if(!performances.length){
+    c.innerHTML=`<div class="empty-state"><div class="empty-icon">🎤</div><p>등록된 공연이 없어요</p></div>`;
+    return;
+  }
+  c.innerHTML=performances.map(p=>{
+    const [d,t]=String(p.datetime).split('T');
+    return `
+    <div class="entry-card">
+      <div class="entry-icon">🎤</div>
+      <div class="entry-info">
+        <div class="entry-song">${escapeHtml(p.name)}</div>
+        <div class="entry-meta">${d} · ${t} · ${escapeHtml(p.dressCode)}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="perf-action-btn" onclick="startEditPerf(${p.id})">수정</button>
+        <button class="perf-action-btn danger" onclick="openPerfDeleteModal(${p.id})">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // Toast
