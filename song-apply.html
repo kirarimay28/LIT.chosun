@@ -153,6 +153,11 @@
   <div class="header">
     <h1>LiT</h1>
     <div class="sub">곡 · 안무팀장 신청</div>
+    <div class="sub" id="perf-context" style="margin-top:8px;color:rgba(255,255,255,0.55);"></div>
+  </div>
+
+  <div class="notice-card" id="missing-perf-notice" style="display:none;border-color:rgba(255,107,107,0.28);">
+    <p style="color:var(--danger);font-size:13px;line-height:1.7;">⚠️ 어떤 공연에 대한 신청인지 확인할 수 없어요. 앱의 공연 탭에서 [🎶 곡·안무팀장 신청] 버튼을 눌러 다시 들어와주세요.</p>
   </div>
 
   <div class="notice-card">
@@ -259,6 +264,19 @@
 <script>
 const PERF_API_URL = 'https://script.google.com/macros/s/AKfycbzoa7lLjpus_VLNhVdnOB0rd6okTEwv8RzWBdFvDf_qElPhDKDJy6TxFRNx5tXsZVuT/exec';
 
+const params = new URLSearchParams(window.location.search);
+const PERF_ID = params.get('perfId');
+const PERF_NAME = params.get('perfName') || '';
+
+(function initPerfContext(){
+  if(!PERF_ID){
+    document.getElementById('missing-perf-notice').style.display='block';
+    document.querySelectorAll('.tabs, .panel').forEach(el=>el.style.display='none');
+    return;
+  }
+  document.getElementById('perf-context').textContent = `📅 ${PERF_NAME || '선택된 공연'} 신청`;
+})();
+
 function switchTab(tab){
   ['song','choreo'].forEach((t,i)=>{
     document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===tab);
@@ -296,7 +314,7 @@ async function submitSong(){
   try {
     await fetch(PERF_API_URL, {
       method:'POST',
-      body: JSON.stringify({action:'addSong', id:Date.now(), name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
+      body: JSON.stringify({action:'addSong', id:Date.now(), perfId:PERF_ID, name, members, duration, link, createdAt:new Date().toISOString().split('T')[0]})
     });
     showToast('✓ 곡 신청 완료','success');
     ['song-name','song-members','song-link'].forEach(id=>document.getElementById(id).value='');
@@ -318,7 +336,7 @@ async function submitChoreo(){
   try {
     await fetch(PERF_API_URL, {
       method:'POST',
-      body: JSON.stringify({action:'addChoreo', id:Date.now(), name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
+      body: JSON.stringify({action:'addChoreo', id:Date.now(), perfId:PERF_ID, name, members, duration, link, condition, createdAt:new Date().toISOString().split('T')[0]})
     });
     showToast('✓ 안무팀장 신청 완료','success');
     ['choreo-name','choreo-members','choreo-link','choreo-condition'].forEach(id=>document.getElementById(id).value='');

@@ -547,27 +547,6 @@
 
   <!-- Performance Panel -->
   <div id="panel-performance" class="panel">
-    <div class="form-card" style="margin-bottom:18px;">
-      <div class="section-label">곡 신청</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <a class="submit-btn" style="flex:1;margin-top:0;text-align:center;text-decoration:none;min-width:140px;" href="song-apply.html" target="_blank" rel="noopener noreferrer">🎶 곡 · 안무팀장 신청</a>
-        <button class="submit-btn cancel-submit-btn" style="flex:1;margin-top:0;min-width:140px;" id="song-roster-btn" onclick="toggleSongRoster()" disabled>📃 곡 명단 확인</button>
-      </div>
-      <div class="hours-notice visible" id="song-roster-lock-note" style="margin-top:10px;">🔒 아직 곡 명단이 확정되지 않았어요</div>
-
-      <div id="song-roster-panel" style="display:none;margin-top:18px;">
-        <div class="section-label">신청된 곡</div>
-        <div id="song-list-container"></div>
-        <div class="section-label" style="margin-top:20px;">안무팀장 신청</div>
-        <div id="choreo-list-container"></div>
-      </div>
-
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <span class="time-select-label">관리자용</span>
-        <button class="perf-action-btn" id="confirm-toggle-btn" onclick="toggleSongConfirmed()">확정하기</button>
-      </div>
-    </div>
-
     <div class="form-card">
       <div class="section-label">공연 명</div>
       <input type="text" class="form-input" id="perf-name" placeholder="예) 총축 무대" oninput="checkPerfSubmit()" />
@@ -672,9 +651,6 @@ let reservations = [];
 let performances = [];
 let editingPerfId = null;
 let deletingPerfId = null;
-let songApplications = [];
-let choreoApplications = [];
-let songRosterConfirmed = false;
 
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -790,7 +766,7 @@ async function perfApiGet(){
   try {
     const res = await fetch(PERF_API_URL + '?action=getAll');
     const data = await res.json();
-    performances = data.map(p => ({...p, id: Number(p.id)}));
+    performances = data.map(p => ({...p, id: Number(p.id), confirmed: p.confirmed===true||p.confirmed==='true'||p.confirmed==='TRUE'}));
     performances.sort((a,b)=> String(a.datetime).localeCompare(String(b.datetime)));
   } catch(e) {
     showToast('⚠️ 공연 데이터 불러오기 실패', 'error');
@@ -965,10 +941,7 @@ function switchTab(tab){
     setDatePickerValue('cancel', new Date().toISOString().split('T')[0]);
     apiGet().then(()=>renderCancelList());
   }
-  if(tab==='performance'){
-    perfApiGet().then(()=>renderPerfList());
-    perfStatusGet();
-  }
+  if(tab==='performance') perfApiGet().then(()=>renderPerfList());
 }
 
 // Modal
@@ -1234,77 +1207,58 @@ function renderPerfList(){
   }
   c.innerHTML=performances.map(p=>{
     const [d,t]=String(p.datetime).split('T');
+    const applyUrl=`song-apply.html?perfId=${p.id}&perfName=${encodeURIComponent(p.name)}`;
     return `
-    <div class="entry-card">
-      <div class="entry-icon">🎤</div>
-      <div class="entry-info">
-        <div class="entry-song">${escapeHtml(p.name)}</div>
-        <div class="entry-meta">${d} · ${t} · ${escapeHtml(p.dressCode)}</div>
+    <div class="entry-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="entry-icon">🎤</div>
+        <div class="entry-info">
+          <div class="entry-song">${escapeHtml(p.name)}</div>
+          <div class="entry-meta">${d} · ${t} · ${escapeHtml(p.dressCode)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="perf-action-btn" onclick="startEditPerf(${p.id})">수정</button>
+          <button class="perf-action-btn danger" onclick="openPerfDeleteModal(${p.id})">삭제</button>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button class="perf-action-btn" onclick="startEditPerf(${p.id})">수정</button>
-        <button class="perf-action-btn danger" onclick="openPerfDeleteModal(${p.id})">삭제</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <a class="perf-action-btn" style="text-decoration:none;" href="${applyUrl}" target="_blank" rel="noopener noreferrer">🎶 곡·안무팀장 신청</a>
+        <button class="perf-action-btn" onclick="toggleSongRoster(${p.id})" ${p.confirmed?'':'disabled'}>${p.confirmed?'📃 곡 명단':'🔒 곡 명단 (미확정)'}</button>
+        <button class="perf-action-btn" style="margin-left:auto;" onclick="togglePerfConfirmed(${p.id}, ${p.confirmed})">${p.confirmed?'확정 해제':'관리자: 확정하기'}</button>
       </div>
+      <div id="song-roster-${p.id}" style="display:none;margin-top:12px;"></div>
     </div>`;
   }).join('');
 }
 
-// Song roster (song / choreo-leader applications)
-async function perfStatusGet(){
-  try {
-    const res = await fetch(PERF_API_URL + '?action=getStatus');
-    const data = await res.json();
-    songRosterConfirmed = !!data.confirmed;
-  } catch(e) {
-    songRosterConfirmed = false;
-  }
-  updateSongRosterUI();
-}
-function updateSongRosterUI(){
-  document.getElementById('song-roster-btn').disabled = !songRosterConfirmed;
-  document.getElementById('song-roster-lock-note').classList.toggle('visible', !songRosterConfirmed);
-  document.getElementById('confirm-toggle-btn').textContent = songRosterConfirmed ? '확정 해제' : '확정하기';
-  if(!songRosterConfirmed) document.getElementById('song-roster-panel').style.display='none';
-}
-async function toggleSongConfirmed(){
-  const btn=document.getElementById('confirm-toggle-btn');
-  btn.disabled=true;
+// Song roster (song / choreo-leader applications, scoped per performance)
+let perfRosterState = {};
+async function togglePerfConfirmed(perfId, currentConfirmed){
   await fetch(PERF_API_URL, {
     method:'POST',
-    body: JSON.stringify({action:'setConfirmed', confirmed: !songRosterConfirmed})
+    body: JSON.stringify({action:'setConfirmed', perfId, confirmed: !currentConfirmed})
   });
-  await perfStatusGet();
-  btn.disabled=false;
-  showToast(songRosterConfirmed ? '✓ 곡 명단이 확정됐어요' : '곡 명단 확정이 해제됐어요', songRosterConfirmed?'success':'error');
+  delete perfRosterState[perfId];
+  await perfApiGet();
+  renderPerfList();
+  showToast(!currentConfirmed ? '✓ 곡 명단이 확정됐어요' : '곡 명단 확정이 해제됐어요', !currentConfirmed?'success':'error');
 }
-async function toggleSongRoster(){
-  if(!songRosterConfirmed) return;
-  const panel=document.getElementById('song-roster-panel');
-  if(panel.style.display!=='none'){ panel.style.display='none'; return; }
-  await Promise.all([perfSongsGet(), perfChoreoGet()]);
-  renderSongList();
-  renderChoreoList();
-  panel.style.display='block';
+async function toggleSongRoster(perfId){
+  const p=performances.find(x=>x.id===perfId);
+  if(!p || !p.confirmed) return;
+  const container=document.getElementById(`song-roster-${perfId}`);
+  const state=perfRosterState[perfId] || (perfRosterState[perfId]={open:false});
+  if(state.open){ container.style.display='none'; state.open=false; return; }
+  const [songs, choreo] = await Promise.all([
+    fetch(`${PERF_API_URL}?action=getSongs&perfId=${perfId}`).then(r=>r.json()),
+    fetch(`${PERF_API_URL}?action=getChoreo&perfId=${perfId}`).then(r=>r.json())
+  ]);
+  container.innerHTML = renderRosterHtml(songs, choreo);
+  container.style.display='block';
+  state.open=true;
 }
-async function perfSongsGet(){
-  try {
-    const res = await fetch(PERF_API_URL + '?action=getSongs');
-    songApplications = await res.json();
-  } catch(e) { showToast('⚠️ 곡 신청 목록 불러오기 실패','error'); }
-}
-async function perfChoreoGet(){
-  try {
-    const res = await fetch(PERF_API_URL + '?action=getChoreo');
-    choreoApplications = await res.json();
-  } catch(e) { showToast('⚠️ 안무팀장 신청 목록 불러오기 실패','error'); }
-}
-function renderSongList(){
-  const c=document.getElementById('song-list-container');
-  if(!songApplications.length){
-    c.innerHTML=`<div class="empty-state" style="padding:24px 0;"><p>신청된 곡이 없어요</p></div>`;
-    return;
-  }
-  c.innerHTML=songApplications.map(s=>`
+function renderRosterHtml(songs, choreo){
+  const songsHtml = songs.length ? songs.map(s=>`
     <div class="entry-card">
       <div class="entry-icon">🎶</div>
       <div class="entry-info">
@@ -1312,15 +1266,8 @@ function renderSongList(){
         <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))}</div>
         <div class="entry-formatted">${escapeHtml(String(s.link))}</div>
       </div>
-    </div>`).join('');
-}
-function renderChoreoList(){
-  const c=document.getElementById('choreo-list-container');
-  if(!choreoApplications.length){
-    c.innerHTML=`<div class="empty-state" style="padding:24px 0;"><p>신청된 안무팀장이 없어요</p></div>`;
-    return;
-  }
-  c.innerHTML=choreoApplications.map(s=>`
+    </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 곡이 없어요</p></div>`;
+  const choreoHtml = choreo.length ? choreo.map(s=>`
     <div class="entry-card">
       <div class="entry-icon">💃</div>
       <div class="entry-info">
@@ -1328,7 +1275,13 @@ function renderChoreoList(){
         <div class="entry-meta">인원 ${escapeHtml(String(s.members))}명 · ${escapeHtml(String(s.duration))}</div>
         <div class="entry-formatted">${escapeHtml(String(s.link))} · ${escapeHtml(String(s.condition))}</div>
       </div>
-    </div>`).join('');
+    </div>`).join('') : `<div class="empty-state" style="padding:16px 0;"><p>신청된 안무팀장이 없어요</p></div>`;
+  return `
+    <div class="section-label" style="margin-top:0;">신청된 곡</div>
+    ${songsHtml}
+    <div class="section-label">안무팀장 신청</div>
+    ${choreoHtml}
+  `;
 }
 
 // Toast
